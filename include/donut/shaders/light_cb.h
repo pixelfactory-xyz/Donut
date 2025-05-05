@@ -22,6 +22,9 @@
 
 #ifndef LIGHT_CB_H
 #define LIGHT_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #include "light_types.h"
 

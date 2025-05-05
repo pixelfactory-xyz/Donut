@@ -121,8 +121,8 @@ namespace donut::engine
     public:
         TextureCache(
             nvrhi::IDevice* device,
-            std::shared_ptr<vfs::IFileSystem> fs,
-            std::shared_ptr<DescriptorTableManager> descriptorTable);
+            const std::shared_ptr<vfs::IFileSystem>& fs,
+            const std::shared_ptr<DescriptorTableManager>& descriptorTable);
         virtual ~TextureCache();
 
         // Release all cached textures

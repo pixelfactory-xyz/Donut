@@ -22,6 +22,9 @@
 
 #ifndef VIEW_CB_H
 #define VIEW_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct PlanarViewConstants
 {

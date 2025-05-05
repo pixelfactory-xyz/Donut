@@ -22,6 +22,9 @@
 
 #ifndef SKY_CB_H
 #define SKY_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct ProceduralSkyShaderParameters
 {

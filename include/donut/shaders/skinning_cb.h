@@ -22,6 +22,9 @@
 
 #ifndef SKINNING_CB_H
 #define SKINNING_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #define SkinningFlag_FirstFrame     0x01
 #define SkinningFlag_Normals        0x02

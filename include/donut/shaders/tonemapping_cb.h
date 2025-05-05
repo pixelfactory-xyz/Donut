@@ -22,6 +22,9 @@
 
 #ifndef DEPTH_CB_H
 #define DEPTH_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct ToneMappingConstants
 {

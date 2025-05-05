@@ -22,6 +22,9 @@
 
 #ifndef MIPMAP_GEN_CB_H
 #define MIPMAP_GEN_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #define GROUP_SIZE 16
 #define LOD0_TILE_SIZE 8

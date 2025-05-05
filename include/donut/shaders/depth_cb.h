@@ -22,6 +22,9 @@
 
 #ifndef DEPTH_CB_H
 #define DEPTH_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #define DEPTH_SPACE_MATERIAL 0
 #define DEPTH_BINDING_MATERIAL_DIFFUSE_TEXTURE 0

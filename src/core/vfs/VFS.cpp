@@ -259,7 +259,7 @@ RelativeFileSystem::RelativeFileSystem(std::shared_ptr<IFileSystem> fs, const st
 
 bool RelativeFileSystem::folderExists(const std::filesystem::path& name)
 {
-	return m_UnderlyingFS->folderExists(m_BasePath / name.relative_path());
+    return m_UnderlyingFS->folderExists(m_BasePath / name.relative_path());
 }
 
 bool RelativeFileSystem::fileExists(const std::filesystem::path& name)
@@ -298,7 +298,7 @@ void RootFileSystem::mount(const std::filesystem::path& path, std::shared_ptr<IF
     m_MountPoints.push_back(std::make_pair(path.lexically_normal().generic_string(), fs));
 }
 
-void donut::vfs::RootFileSystem::mount(const std::filesystem::path& path, const std::filesystem::path& nativePath)
+void RootFileSystem::mount(const std::filesystem::path& path, const std::filesystem::path& nativePath)
 {
     mount(path, std::make_shared<RelativeFileSystem>(std::make_shared<NativeFileSystem>(), nativePath));
 }
@@ -347,15 +347,15 @@ bool RootFileSystem::findMountPoint(const std::filesystem::path& path, std::file
 
 bool RootFileSystem::folderExists(const std::filesystem::path& name)
 {
-	std::filesystem::path relativePath;
-	IFileSystem* fs = nullptr;
+    std::filesystem::path relativePath;
+    IFileSystem* fs = nullptr;
 
-	if (findMountPoint(name, &relativePath, &fs))
-	{
-		return fs->folderExists(relativePath);
-	}
+    if (findMountPoint(name, &relativePath, &fs))
+    {
+        return fs->folderExists(relativePath);
+    }
 
-	return false;
+    return false;
 }
 
 bool RootFileSystem::fileExists(const std::filesystem::path& name)

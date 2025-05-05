@@ -90,7 +90,7 @@ namespace donut::render
 
         DeferredLightingPass(
             nvrhi::IDevice* device,
-            std::shared_ptr<engine::CommonRenderPasses> commonPasses);
+            const std::shared_ptr<engine::CommonRenderPasses>& commonPasses);
 
         virtual void Init(const std::shared_ptr<engine::ShaderFactory>& shaderFactory);
 

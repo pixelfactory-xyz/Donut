@@ -22,6 +22,9 @@
 
 #ifndef SSAO_CB_H
 #define SSAO_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #include "donut/shaders/view_cb.h"
 

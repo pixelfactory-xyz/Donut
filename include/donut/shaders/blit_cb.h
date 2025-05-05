@@ -22,6 +22,9 @@
 
 #ifndef BLIT_CB_H
 #define BLIT_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct BlitConstants
 {

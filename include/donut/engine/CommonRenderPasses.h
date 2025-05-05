@@ -111,7 +111,7 @@ namespace donut::engine
 
         nvrhi::BindingLayoutHandle m_BlitBindingLayout;
         
-        CommonRenderPasses(nvrhi::IDevice* device, std::shared_ptr<ShaderFactory> shaderFactory);
+        CommonRenderPasses(nvrhi::IDevice* device, const std::shared_ptr<ShaderFactory>& shaderFactory);
         
         void BlitTexture(nvrhi::ICommandList* commandList, const BlitParameters& params, BindingCache* bindingCache = nullptr);
 

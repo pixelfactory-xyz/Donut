@@ -22,6 +22,9 @@
 
 #ifndef BLOOM_CB_H
 #define BLOOM_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct BloomConstants
 {

@@ -119,7 +119,7 @@ namespace donut::vfs
     class NativeFileSystem : public IFileSystem
     {
     public:
-		bool folderExists(const std::filesystem::path& name) override;
+        bool folderExists(const std::filesystem::path& name) override;
         bool fileExists(const std::filesystem::path& name) override;
         std::shared_ptr<IBlob> readFile(const std::filesystem::path& name) override;
         bool writeFile(const std::filesystem::path& name, const void* data, size_t size) override;
@@ -161,7 +161,7 @@ namespace donut::vfs
         void mount(const std::filesystem::path& path, const std::filesystem::path& nativePath);
         bool unmount(const std::filesystem::path& path);
 
-		bool folderExists(const std::filesystem::path& name) override;
+        bool folderExists(const std::filesystem::path& name) override;
         bool fileExists(const std::filesystem::path& name) override;
         std::shared_ptr<IBlob> readFile(const std::filesystem::path& name) override;
         bool writeFile(const std::filesystem::path& name, const void* data, size_t size) override;

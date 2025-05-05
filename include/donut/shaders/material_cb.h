@@ -22,6 +22,9 @@
 
 #ifndef MATERIAL_CB_H
 #define MATERIAL_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 static const int MaterialDomain_Opaque                   = 0;
 static const int MaterialDomain_AlphaTested              = 1;

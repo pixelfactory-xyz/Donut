@@ -129,11 +129,11 @@ public:
 
 TextureCache::TextureCache(
     nvrhi::IDevice* device,
-    std::shared_ptr<IFileSystem> fs,
-    std::shared_ptr<DescriptorTableManager> descriptorTable)
+    const std::shared_ptr<IFileSystem>& fs,
+    const std::shared_ptr<DescriptorTableManager>& descriptorTable)
     : m_Device(device)
-    , m_DescriptorTable(std::move(descriptorTable))
-    , m_fs(std::move(fs))
+    , m_DescriptorTable(descriptorTable)
+    , m_fs(fs)
 {
 }
 
@@ -144,9 +144,9 @@ TextureCache::~TextureCache()
 
 void TextureCache::Reset()
 {
-	std::lock_guard<std::shared_mutex> guard(m_LoadedTexturesMutex);
+    std::lock_guard<std::shared_mutex> guard(m_LoadedTexturesMutex);
 
-	m_LoadedTextures.clear();
+    m_LoadedTextures.clear();
 
     m_TexturesRequested = 0;
     m_TexturesLoaded = 0;
@@ -679,8 +679,8 @@ std::shared_ptr<LoadedTexture> TextureCache::LoadTextureFromMemoryDeferred(
 
 std::shared_ptr<TextureData> TextureCache::GetLoadedTexture(std::filesystem::path const& path)
 {
-	std::lock_guard<std::shared_mutex> guard(m_LoadedTexturesMutex);
-	return m_LoadedTextures[path.generic_string()];
+    std::lock_guard<std::shared_mutex> guard(m_LoadedTexturesMutex);
+    return m_LoadedTextures[path.generic_string()];
 }
 
 bool TextureCache::ProcessRenderingThreadCommands(CommonRenderPasses& passes, float timeLimitMilliseconds)
@@ -923,5 +923,4 @@ namespace donut::engine
 
         return true;
     }
-
 }

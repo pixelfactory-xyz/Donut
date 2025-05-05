@@ -22,6 +22,9 @@
 
 #ifndef FORWARD_CB_H
 #define FORWARD_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #include "light_cb.h"
 #include "view_cb.h"

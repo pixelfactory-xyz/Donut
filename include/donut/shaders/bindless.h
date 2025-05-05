@@ -22,6 +22,9 @@
 
 #ifndef BINDLESS_H_
 #define BINDLESS_H_
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #include "material_cb.h"
 

@@ -22,6 +22,9 @@
 
 #ifndef GBUFFER_CB_H
 #define GBUFFER_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 #include "view_cb.h"
 

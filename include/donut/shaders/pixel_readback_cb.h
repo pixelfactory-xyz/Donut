@@ -22,6 +22,9 @@
 
 #ifndef PIXEL_READBACK_CB_H
 #define PIXEL_READBACK_CB_H
+#ifdef __cplusplus
+using namespace donut::math;
+#endif
 
 struct PixelReadbackConstants
 {
