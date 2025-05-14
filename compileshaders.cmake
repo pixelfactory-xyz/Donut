@@ -203,7 +203,7 @@ function(donut_compile_shaders)
            -D TARGET_D3D12
            --compiler "${SHADERMAKE_SLANG_PATH}"
            --slang
-           --shaderModel 6_5
+           --shaderModel ${params_SHADER_MODEL}
            ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
@@ -269,6 +269,7 @@ function(donut_compile_shaders)
            --compiler "${SHADERMAKE_DXC_VK_PATH}"
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
            --vulkanVersion ${VULKAN_VERSION}
+           --shaderModel ${params_SHADER_MODEL}
            ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
@@ -304,6 +305,7 @@ function(donut_compile_shaders)
            --slang
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
            --vulkanVersion ${VULKAN_VERSION}
+           --shaderModel ${params_SHADER_MODEL}
            ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
@@ -350,6 +352,7 @@ endfunction()
 #                                     [SHADERMAKE_OPTIONS_DXBC <string>]  -- same, only DXBC specific
 #                                     [SHADERMAKE_OPTIONS_DXIL <string>]  -- same, only DXIL specific
 #                                     [SHADERMAKE_OPTIONS_SPIRV <string>] -- same, only SPIR-V specific
+#                                     [SHADER_MODEL <string>]             -- shader model n_n format (default: 6_5)
 #                                     [BYPRODUCTS_NO_EXT <list>])         -- see the comment above
 #                                     [INCLUDES <list>]                   -- include paths
 #                                     [IGNORE_INCLUDES <list>])           -- list of included files for ShaderMake to ignore (e.g. c++)
@@ -362,6 +365,7 @@ function(donut_compile_shaders_all_platforms)
         SHADERMAKE_OPTIONS_DXBC
         SHADERMAKE_OPTIONS_DXIL
         SHADERMAKE_OPTIONS_SPIRV
+        SHADER_MODEL
         COMPILER_OPTIONS        # deprecated
         COMPILER_OPTIONS_DXBC   # deprecated
         COMPILER_OPTIONS_DXIL   # deprecated
@@ -432,6 +436,7 @@ function(donut_compile_shaders_all_platforms)
             SHADERMAKE_OPTIONS ${params_SHADERMAKE_OPTIONS}
             SHADERMAKE_OPTIONS_DXIL ${params_SHADERMAKE_OPTIONS_DXIL}
             SHADERMAKE_OPTIONS_SPIRV ${params_SHADERMAKE_OPTIONS_SPIRV}
+            SHADER_MODEL ${params_SHADER_MODEL}
             SOURCES ${params_SOURCES}
             INCLUDES ${params_INCLUDES}
             IGNORE_INCLUDES ${params_IGNORE_INCLUDES}
@@ -450,6 +455,7 @@ function(donut_compile_shaders_all_platforms)
             SHADERMAKE_OPTIONS_DXIL ${params_SHADERMAKE_OPTIONS_DXIL}
             SHADERMAKE_OPTIONS_DXBC ${params_SHADERMAKE_OPTIONS_DXBC}
             SHADERMAKE_OPTIONS_SPIRV ${params_SHADERMAKE_OPTIONS_SPIRV}
+            SHADER_MODEL ${params_SHADER_MODEL}
             SOURCES ${params_SOURCES}
             INCLUDES ${params_INCLUDES}
             IGNORE_INCLUDES ${params_IGNORE_INCLUDES}
