@@ -193,7 +193,12 @@ namespace donut::app
 #if DONUT_WITH_VULKAN
         std::vector<std::string> requiredVulkanDeviceExtensions;
         std::vector<std::string> optionalVulkanDeviceExtensions;
-        std::vector<size_t> ignoredVulkanValidationMessageLocations;
+        std::vector<size_t> ignoredVulkanValidationMessageLocations = {
+            // Ignore the warnings like "the storage image descriptor [...] is accessed by a OpTypeImage that has
+            //   a Format operand ... which doesn't match the VkImageView ..." -- even when the GPU supports
+            // storage without format, which all modern GPUs do, there is no good way to enable it in the shaders.
+            0x13365b2
+        };
         std::function<void(VkDeviceCreateInfo&)> deviceCreateInfoCallback;
 
         // This pointer specifies an optional structure to be put at the end of the chain for 'vkGetPhysicalDeviceFeatures2' call.
