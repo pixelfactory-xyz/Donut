@@ -322,12 +322,13 @@ static cgltf_texture_extensions cgltf_parse_texture_extensions(const cgltf_textu
         constexpr int c_MaxTokens = 64;
         jsmntok_t tokens[c_MaxTokens];
         
+        int k = 0;
+        
         // parse the string into tokens
         int numTokens = jsmn_parse(&parser, ext.data, extensionLength, tokens, c_MaxTokens);
         if (numTokens < 0)
             goto fail;
 
-        int k = 0;
         if (isDDS)
         {
             if (cgltf_parse_texture_dds(tokens, k, (const uint8_t*)ext.data, &result.ddsImage, objects) < 0)
