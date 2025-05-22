@@ -156,8 +156,8 @@ function(donut_compile_shaders)
     endforeach()
 
     if (params_DXIL AND DONUT_WITH_DX12)
-        if (NOT DXC_PATH)
-            message(FATAL_ERROR "donut_compile_shaders: DXC not found --- please set DXC_PATH to the full path to the DXC binary")
+        if (NOT EXISTS "${SHADERMAKE_DXC_PATH}")
+            message(FATAL_ERROR "donut_compile_shaders: DXC not found -- please set SHADERMAKE_DXC_PATH to the full path to the DXC binary")
         endif()
         
         set(compilerCommand ShaderMake
@@ -168,7 +168,7 @@ function(donut_compile_shaders)
            ${include_dirs}
            ${ignore_includes}
            -D TARGET_D3D12
-           --compiler "${DXC_PATH}"
+           --compiler "${SHADERMAKE_DXC_PATH}"
            --shaderModel ${params_SHADER_MODEL}
            ${use_api_arg})
 
@@ -188,8 +188,8 @@ function(donut_compile_shaders)
     endif()
 
     if (params_DXIL_SLANG AND DONUT_WITH_DX12)
-        if (NOT SLANGC_PATH)
-            message(FATAL_ERROR "donut_compile_shaders: Slang not found --- please set SLANGC_PATH to the full path to the Slang executable")
+        if (NOT EXISTS "${SHADERMAKE_SLANG_PATH}")
+            message(FATAL_ERROR "donut_compile_shaders: Slang not found --- please set SHADERMAKE_SLANG_PATH to the full path to the Slang executable")
         endif()
         
         set(compilerCommand ShaderMake
@@ -200,7 +200,7 @@ function(donut_compile_shaders)
            ${include_dirs}
            ${ignore_includes}
            -D TARGET_D3D12
-           --compiler "${SLANGC_PATH}"
+           --compiler "${SHADERMAKE_SLANG_PATH}"
            --slang
            --shaderModel 6_5)
 
@@ -220,8 +220,8 @@ function(donut_compile_shaders)
     endif()
 
     if (params_DXBC AND DONUT_WITH_DX11)
-        if (NOT FXC_PATH)
-            message(FATAL_ERROR "donut_compile_shaders: FXC not found --- please set FXC_PATH to the full path to the FXC binary")
+        if (NOT EXISTS "${SHADERMAKE_FXC_PATH}")
+            message(FATAL_ERROR "donut_compile_shaders: FXC not found -- please set SHADERMAKE_FXC_PATH to the full path to the FXC binary")
         endif()
         
         set(compilerCommand ShaderMake
@@ -232,7 +232,7 @@ function(donut_compile_shaders)
            ${include_dirs}
            ${ignore_includes}
            -D TARGET_D3D11
-           --compiler "${FXC_PATH}"
+           --compiler "${SHADERMAKE_FXC_PATH}"
            ${use_api_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
@@ -251,8 +251,8 @@ function(donut_compile_shaders)
     endif()
 
     if (params_SPIRV_DXC AND DONUT_WITH_VULKAN)
-        if (NOT DXC_SPIRV_PATH)
-            message(FATAL_ERROR "donut_compile_shaders: DXC for SPIR-V not found --- please set DXC_SPIRV_PATH to the full path to the DXC binary")
+        if (NOT EXISTS "${SHADERMAKE_DXC_VK_PATH}")
+            message(FATAL_ERROR "donut_compile_shaders: DXC not found -- please set SHADERMAKE_DXC_VK_PATH to the full path to the DXC binary")
         endif()
         
         set(compilerCommand ShaderMake
@@ -264,7 +264,7 @@ function(donut_compile_shaders)
            ${ignore_includes}
            -D SPIRV
            -D TARGET_VULKAN
-           --compiler "${DXC_SPIRV_PATH}"
+           --compiler "${SHADERMAKE_DXC_VK_PATH}"
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
            --vulkanVersion ${VULKAN_VERSION}
            ${use_api_arg})
@@ -285,8 +285,8 @@ function(donut_compile_shaders)
     endif()
 
     if (params_SPIRV_SLANG AND DONUT_WITH_VULKAN)
-        if (NOT SLANGC_PATH)
-            message(FATAL_ERROR "donut_compile_shaders: Slang not found --- please set SLANGC_PATH to the full path to the Slang executable")
+        if (NOT EXISTS "${SHADERMAKE_SLANG_PATH}")
+            message(FATAL_ERROR "donut_compile_shaders: Slang compiler not found --- please set SHADERMAKE_SLANG_PATH to the full path to the Slang executable")
         endif()
         
         set(compilerCommand ShaderMake
@@ -298,7 +298,7 @@ function(donut_compile_shaders)
            ${ignore_includes}
            -D SPIRV
            -D TARGET_VULKAN
-           --compiler "${SLANGC_PATH}"
+           --compiler "${SHADERMAKE_SLANG_PATH}"
            --slang
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
            --vulkanVersion ${VULKAN_VERSION})

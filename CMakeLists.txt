@@ -71,8 +71,14 @@ add_subdirectory(thirdparty)
 
 if (NOT TARGET ShaderMake)
     option(SHADERMAKE_FIND_FXC "" "${DONUT_WITH_DX11}")
-    option(SHADERMAKE_FIND_DXC "" "${DONUT_WITH_DX12}")
-    option(SHADERMAKE_FIND_DXC_SPIRV "" "${DONUT_WITH_VULKAN}")
+    if (DONUT_WITH_DX12 OR DONUT_WITH_VULKAN)
+        # Ask ShaderMake to download a build of DXC if we're building for DX12 or Vulkan,
+        # to have something in case Vulkan SDK is not installed.
+        option(SHADERMAKE_FIND_DXC "" ON)
+    else()
+        option(SHADERMAKE_FIND_DXC "" OFF)
+    endif()
+    option(SHADERMAKE_FIND_DXC_VK "" "${DONUT_WITH_VULKAN}")
 
     add_subdirectory(ShaderMake)
 endif()
