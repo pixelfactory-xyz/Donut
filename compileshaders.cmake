@@ -67,6 +67,7 @@ function(donut_compile_shaders)
         DXIL_SLANG
         FOLDER
         OUTPUT_FORMAT
+        PROJECT_NAME
         SPIRV_DXC
         SPIRV_SLANG
         VULKAN_VERSION
@@ -111,7 +112,7 @@ function(donut_compile_shaders)
         set_source_files_properties(${params_SOURCES} PROPERTIES VS_TOOL_OVERRIDE "None") 
 
         add_custom_target(${params_TARGET}
-            DEPENDS ShaderMake
+            DEPENDS ${SHADERMAKE_PATH}
             SOURCES ${params_SOURCES})
     endif()
 	
@@ -119,18 +120,18 @@ function(donut_compile_shaders)
 		set(params_SHADER_MODEL "6_5")
 	endif()
 
-    if (WIN32)
-        set(use_api_arg --useAPI)
-    else()
-        set(use_api_arg "")
-    endif()
-
     if ("${params_OUTPUT_FORMAT}" STREQUAL "HEADER")
         set(output_format_arg --headerBlob)
     elseif(("${params_OUTPUT_FORMAT}" STREQUAL "BINARY") OR ("${params_OUTPUT_FORMAT}" STREQUAL ""))
         set(output_format_arg --binaryBlob --outputExt .bin)
     else()
         message(FATAL_ERROR "donut_compile_shaders: unsupported OUTPUT_FORMAT = '${params_OUTPUT_FORMAT}'")
+    endif()
+
+    if (params_PROJECT_NAME)
+        set(project_name_arg --project "${params_PROJECT_NAME}")
+    else()
+        set(project_name_arg "")
     endif()
 
     separate_arguments(params_SHADERMAKE_OPTIONS       NATIVE_COMMAND "${params_SHADERMAKE_OPTIONS}")
@@ -160,7 +161,7 @@ function(donut_compile_shaders)
             message(FATAL_ERROR "donut_compile_shaders: DXC not found -- please set SHADERMAKE_DXC_PATH to the full path to the DXC binary")
         endif()
         
-        set(compilerCommand ShaderMake
+        set(compilerCommand ${SHADERMAKE_PATH}
            --config ${params_CONFIG}
            --out ${params_DXIL}
            --platform DXIL
@@ -170,7 +171,7 @@ function(donut_compile_shaders)
            -D TARGET_D3D12
            --compiler "${SHADERMAKE_DXC_PATH}"
            --shaderModel ${params_SHADER_MODEL}
-           ${use_api_arg})
+           ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS_DXIL})
@@ -192,7 +193,7 @@ function(donut_compile_shaders)
             message(FATAL_ERROR "donut_compile_shaders: Slang not found --- please set SHADERMAKE_SLANG_PATH to the full path to the Slang executable")
         endif()
         
-        set(compilerCommand ShaderMake
+        set(compilerCommand ${SHADERMAKE_PATH}
            --config ${params_CONFIG}
            --out ${params_DXIL_SLANG}
            --platform DXIL
@@ -202,7 +203,8 @@ function(donut_compile_shaders)
            -D TARGET_D3D12
            --compiler "${SHADERMAKE_SLANG_PATH}"
            --slang
-           --shaderModel 6_5)
+           --shaderModel 6_5
+           ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS_DXIL})
@@ -224,7 +226,7 @@ function(donut_compile_shaders)
             message(FATAL_ERROR "donut_compile_shaders: FXC not found -- please set SHADERMAKE_FXC_PATH to the full path to the FXC binary")
         endif()
         
-        set(compilerCommand ShaderMake
+        set(compilerCommand ${SHADERMAKE_PATH}
            --config ${params_CONFIG}
            --out ${params_DXBC}
            --platform DXBC
@@ -233,7 +235,7 @@ function(donut_compile_shaders)
            ${ignore_includes}
            -D TARGET_D3D11
            --compiler "${SHADERMAKE_FXC_PATH}"
-           ${use_api_arg})
+           ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS_DXBC})
@@ -255,7 +257,7 @@ function(donut_compile_shaders)
             message(FATAL_ERROR "donut_compile_shaders: DXC not found -- please set SHADERMAKE_DXC_VK_PATH to the full path to the DXC binary")
         endif()
         
-        set(compilerCommand ShaderMake
+        set(compilerCommand ${SHADERMAKE_PATH}
            --config ${params_CONFIG}
            --out ${params_SPIRV_DXC}
            --platform SPIRV
@@ -267,7 +269,7 @@ function(donut_compile_shaders)
            --compiler "${SHADERMAKE_DXC_VK_PATH}"
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
            --vulkanVersion ${VULKAN_VERSION}
-           ${use_api_arg})
+           ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS_SPIRV})
@@ -289,7 +291,7 @@ function(donut_compile_shaders)
             message(FATAL_ERROR "donut_compile_shaders: Slang compiler not found --- please set SHADERMAKE_SLANG_PATH to the full path to the Slang executable")
         endif()
         
-        set(compilerCommand ShaderMake
+        set(compilerCommand ${SHADERMAKE_PATH}
            --config ${params_CONFIG}
            --out ${params_SPIRV_SLANG}
            --platform SPIRV
@@ -301,7 +303,8 @@ function(donut_compile_shaders)
            --compiler "${SHADERMAKE_SLANG_PATH}"
            --slang
            ${NVRHI_DEFAULT_VK_REGISTER_OFFSETS}
-           --vulkanVersion ${VULKAN_VERSION})
+           --vulkanVersion ${VULKAN_VERSION}
+           ${project_name_arg})
 
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS})
         list(APPEND compilerCommand ${params_SHADERMAKE_OPTIONS_SPIRV})
@@ -367,6 +370,7 @@ function(donut_compile_shaders_all_platforms)
         FOLDER
         OUTPUT_BASE
         OUTPUT_FORMAT
+        PROJECT_NAME
         TARGET)
     set(multiValueArgs
         BYPRODUCTS_NO_EXT
@@ -397,7 +401,7 @@ function(donut_compile_shaders_all_platforms)
 
     if ("${params_OUTPUT_FORMAT}" STREQUAL "HEADER")
         # Header/static compilation puts everything into one location and differentiates between platforms
-        # using the .dxbc.h, .dxil.h, or .spirv.h extensions native to ShaderMake
+        # using the .dxbc.h, .dxil.h, or .spirv.h extensions native to ${SHADERMAKE_PATH}
         set(output_dxbc ${params_OUTPUT_BASE})
         set(output_dxil ${params_OUTPUT_BASE})
         set(output_spirv ${params_OUTPUT_BASE})
@@ -424,6 +428,7 @@ function(donut_compile_shaders_all_platforms)
             DXIL_SLANG ${output_dxil}
             SPIRV_SLANG ${output_spirv}
             OUTPUT_FORMAT ${params_OUTPUT_FORMAT}
+            PROJECT_NAME ${params_PROJECT_NAME}
             SHADERMAKE_OPTIONS ${params_SHADERMAKE_OPTIONS}
             SHADERMAKE_OPTIONS_DXIL ${params_SHADERMAKE_OPTIONS_DXIL}
             SHADERMAKE_OPTIONS_SPIRV ${params_SHADERMAKE_OPTIONS_SPIRV}
@@ -440,6 +445,7 @@ function(donut_compile_shaders_all_platforms)
             DXIL ${output_dxil}
             SPIRV_DXC ${output_spirv}
             OUTPUT_FORMAT ${params_OUTPUT_FORMAT}
+            PROJECT_NAME ${params_PROJECT_NAME}
             SHADERMAKE_OPTIONS ${params_SHADERMAKE_OPTIONS}
             SHADERMAKE_OPTIONS_DXIL ${params_SHADERMAKE_OPTIONS_DXIL}
             SHADERMAKE_OPTIONS_DXBC ${params_SHADERMAKE_OPTIONS_DXBC}
