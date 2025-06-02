@@ -1050,11 +1050,18 @@ bool DeviceManager_VK::CreateSwapChain()
 {
     CHECK(createSwapChain())
 
-    m_PresentSemaphores.reserve(m_DeviceParams.maxFramesInFlight + 1);
-    m_AcquireSemaphores.reserve(m_DeviceParams.maxFramesInFlight + 1);
-    for (uint32_t i = 0; i < m_DeviceParams.maxFramesInFlight + 1; ++i)
+    size_t const numPresentSemaphores = m_SwapChainImages.size();
+    m_PresentSemaphores.reserve(numPresentSemaphores);
+    for (uint32_t i = 0; i < numPresentSemaphores; ++i)
     {
         m_PresentSemaphores.push_back(m_VulkanDevice.createSemaphore(vk::SemaphoreCreateInfo()));
+    }
+
+    size_t const numAcquireSemaphores = std::max(size_t(m_DeviceParams.maxFramesInFlight),
+        m_SwapChainImages.size());
+    m_AcquireSemaphores.reserve(numAcquireSemaphores);
+    for (uint32_t i = 0; i < numAcquireSemaphores; ++i)
+    {
         m_AcquireSemaphores.push_back(m_VulkanDevice.createSemaphore(vk::SemaphoreCreateInfo()));
     }
 
@@ -1158,7 +1165,7 @@ bool DeviceManager_VK::BeginFrame()
 
 bool DeviceManager_VK::Present()
 {
-    const auto& semaphore = m_PresentSemaphores[m_PresentSemaphoreIndex];
+    const auto& semaphore = m_PresentSemaphores[m_SwapChainIndex];
 
     m_NvrhiDevice->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, semaphore, 0);
 
@@ -1178,8 +1185,6 @@ bool DeviceManager_VK::Present()
     {
         return false;
     }
-
-    m_PresentSemaphoreIndex = (m_PresentSemaphoreIndex + 1) % m_PresentSemaphores.size();
 
 #ifndef _WIN32
     if (m_DeviceParams.vsyncEnabled || m_DeviceParams.enableDebugRuntime)

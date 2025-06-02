@@ -259,7 +259,6 @@ protected:
     std::vector<vk::Semaphore> m_AcquireSemaphores;
     std::vector<vk::Semaphore> m_PresentSemaphores;
     uint32_t m_AcquireSemaphoreIndex = 0;
-    uint32_t m_PresentSemaphoreIndex = 0;
 
     std::queue<nvrhi::EventQueryHandle> m_FramesInFlight;
     std::vector<nvrhi::EventQueryHandle> m_QueryPool;
