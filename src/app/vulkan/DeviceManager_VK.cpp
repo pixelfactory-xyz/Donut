@@ -571,6 +571,7 @@ bool DeviceManager_VK::createDevice()
     bool maintenance4Supported = false;
     bool aftermathSupported = false;
     bool clusterAccelerationStructureSupported = false;
+    bool mutableDescriptorTypeSupported = false;
 
     log::message(m_DeviceParams.infoLogSeverity, "Enabled Vulkan device extensions:");
     for (const auto& ext : enabledExtensions.device)
@@ -603,6 +604,8 @@ bool DeviceManager_VK::createDevice()
             aftermathSupported = true;
         else if (ext == VK_NV_CLUSTER_ACCELERATION_STRUCTURE_EXTENSION_NAME)
             clusterAccelerationStructureSupported = true;
+        else if (ext == VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME)
+            mutableDescriptorTypeSupported = true;
     }
 
 #define APPEND_EXTENSION(condition, desc) if (condition) { (desc).pNext = pNext; pNext = &(desc); }  // NOLINT(cppcoreguidelines-macro-usage)
@@ -615,7 +618,7 @@ bool DeviceManager_VK::createDevice()
     auto maintenance4Features = vk::PhysicalDeviceMaintenance4Features();
     // Determine support for aftermath
     auto aftermathPhysicalFeatures = vk::PhysicalDeviceDiagnosticsConfigFeaturesNV();
-    
+
     // Put the user-provided extension structure at the end of the chain
     pNext = m_DeviceParams.physicalDeviceFeatures2Extensions;
     APPEND_EXTENSION(true, bufferDeviceAddressFeatures);
@@ -675,6 +678,8 @@ bool DeviceManager_VK::createDevice()
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderErrorReporting);
     auto clusterAccelerationStructureFeatures = vk::PhysicalDeviceClusterAccelerationStructureFeaturesNV()
         .setClusterAccelerationStructure(true);
+    auto mutableDescriptorTypeFeatures = vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT()
+        .setMutableDescriptorType(true);
     
     pNext = nullptr;
     APPEND_EXTENSION(accelStructSupported, accelStructFeatures)
@@ -685,6 +690,7 @@ bool DeviceManager_VK::createDevice()
     APPEND_EXTENSION(interlockSupported, interlockFeatures)
     APPEND_EXTENSION(barycentricSupported, barycentricFeatures)
     APPEND_EXTENSION(clusterAccelerationStructureSupported, clusterAccelerationStructureFeatures)
+    APPEND_EXTENSION(mutableDescriptorTypeSupported, mutableDescriptorTypeFeatures)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion >= VK_API_VERSION_1_3, vulkan13features)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features);
     

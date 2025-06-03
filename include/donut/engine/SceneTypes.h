@@ -256,7 +256,7 @@ namespace donut::engine
         bool dirty = true; // set this to true to make Scene update the material data
 
         virtual ~Material() = default;
-        void FillConstantBuffer(struct MaterialConstants& constants) const;
+        void FillConstantBuffer(struct MaterialConstants& constants, bool useResourceDescriptorHeapBindless = false) const;
         bool SetProperty(const std::string& name, const dm::float4& value);
     };
 
