@@ -36,6 +36,11 @@
 #define VK_LOCATION(loc) [[vk::location(loc)]]
 #define VK_LOCATION_INDEX(loc,idx) [[vk::location(loc)]] [[vk::index(idx)]]
 
+// Allows RWTexture2D<float4> to map to any compatible type
+// see https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#formats-without-shader-storage-format
+// shaderStorageImageWriteWithoutFormat and shaderStorageImageReadWithoutFormat 
+#define VK_IMAGE_FORMAT_UNKNOWN [[vk::image_format("unknown")]]
+
 #else
 
 #define VK_PUSH_CONSTANT
@@ -44,6 +49,7 @@
 #define VK_IMAGE_FORMAT(format)
 #define VK_LOCATION(loc)
 #define VK_LOCATION_INDEX(loc,idx)
+#define VK_IMAGE_FORMAT_UNKNOWN
 
 #endif
 

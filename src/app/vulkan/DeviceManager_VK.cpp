@@ -570,6 +570,7 @@ bool DeviceManager_VK::createDevice()
     bool synchronization2Supported = false;
     bool maintenance4Supported = false;
     bool aftermathSupported = false;
+    bool clusterAccelerationStructureSupported = false;
 
     log::message(m_DeviceParams.infoLogSeverity, "Enabled Vulkan device extensions:");
     for (const auto& ext : enabledExtensions.device)
@@ -600,6 +601,8 @@ bool DeviceManager_VK::createDevice()
             m_SwapChainMutableFormatSupported = true;
         else if (ext == VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME)
             aftermathSupported = true;
+        else if (ext == VK_NV_CLUSTER_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+            clusterAccelerationStructureSupported = true;
     }
 
 #define APPEND_EXTENSION(condition, desc) if (condition) { (desc).pNext = pNext; pNext = &(desc); }  // NOLINT(cppcoreguidelines-macro-usage)
@@ -612,7 +615,7 @@ bool DeviceManager_VK::createDevice()
     auto maintenance4Features = vk::PhysicalDeviceMaintenance4Features();
     // Determine support for aftermath
     auto aftermathPhysicalFeatures = vk::PhysicalDeviceDiagnosticsConfigFeaturesNV();
-
+    
     // Put the user-provided extension structure at the end of the chain
     pNext = m_DeviceParams.physicalDeviceFeatures2Extensions;
     APPEND_EXTENSION(true, bufferDeviceAddressFeatures);
@@ -659,8 +662,6 @@ bool DeviceManager_VK::createDevice()
         .setFragmentShaderPixelInterlock(true);
     auto barycentricFeatures = vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR()
         .setFragmentShaderBarycentric(true);
-    auto storage16BitFeatures = vk::PhysicalDevice16BitStorageFeatures()
-        .setStorageBuffer16BitAccess(true);
     auto vrsFeatures = vk::PhysicalDeviceFragmentShadingRateFeaturesKHR()
         .setPipelineFragmentShadingRate(true)
         .setPrimitiveFragmentShadingRate(true)
@@ -672,7 +673,9 @@ bool DeviceManager_VK::createDevice()
         .setFlags(vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableResourceTracking
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderErrorReporting);
-
+    auto clusterAccelerationStructureFeatures = vk::PhysicalDeviceClusterAccelerationStructureFeaturesNV()
+        .setClusterAccelerationStructure(true);
+    
     pNext = nullptr;
     APPEND_EXTENSION(accelStructSupported, accelStructFeatures)
     APPEND_EXTENSION(rayPipelineSupported, rayPipelineFeatures)
@@ -681,9 +684,11 @@ bool DeviceManager_VK::createDevice()
     APPEND_EXTENSION(vrsSupported, vrsFeatures)
     APPEND_EXTENSION(interlockSupported, interlockFeatures)
     APPEND_EXTENSION(barycentricSupported, barycentricFeatures)
-    APPEND_EXTENSION(storage16BitSupported, storage16BitFeatures)
+    APPEND_EXTENSION(clusterAccelerationStructureSupported, clusterAccelerationStructureFeatures)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion >= VK_API_VERSION_1_3, vulkan13features)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features);
+    
+
 #if DONUT_WITH_AFTERMATH
     if (aftermathPhysicalFeatures.diagnosticsConfig && m_DeviceParams.enableAftermath)
         APPEND_EXTENSION(aftermathSupported, aftermathFeatures);
@@ -701,10 +706,14 @@ bool DeviceManager_VK::createDevice()
         .setFillModeNonSolid(true)
         .setFragmentStoresAndAtomics(true)
         .setDualSrcBlend(true)
-        .setVertexPipelineStoresAndAtomics(true);
+        .setVertexPipelineStoresAndAtomics(true)
+        .setShaderInt64(true)
+        .setShaderStorageImageWriteWithoutFormat(true)
+        .setShaderStorageImageReadWithoutFormat(true);
 
     // Add a Vulkan 1.1 structure with default settings to make it easier for apps to modify them
     auto vulkan11features = vk::PhysicalDeviceVulkan11Features()
+        .setStorageBuffer16BitAccess(true)
         .setPNext(pNext);
 
     auto vulkan12features = vk::PhysicalDeviceVulkan12Features()
@@ -715,6 +724,8 @@ bool DeviceManager_VK::createDevice()
         .setTimelineSemaphore(true)
         .setShaderSampledImageArrayNonUniformIndexing(true)
         .setBufferDeviceAddress(bufferDeviceAddressFeatures.bufferDeviceAddress)
+        .setShaderSubgroupExtendedTypes(true)
+        .setScalarBlockLayout(true)
         .setPNext(&vulkan11features);
 
     auto layerVec = stringSetToVector(enabledExtensions.layers);
@@ -1022,6 +1033,7 @@ bool DeviceManager_VK::CreateDevice()
     deviceDesc.aftermathEnabled = m_DeviceParams.enableAftermath;
 #endif
     deviceDesc.vulkanLibraryName = m_DeviceParams.vulkanLibraryName;
+    deviceDesc.logBufferLifetime = m_DeviceParams.logBufferLifetime;
 
     m_NvrhiDevice = nvrhi::vulkan::createDevice(deviceDesc);
 
