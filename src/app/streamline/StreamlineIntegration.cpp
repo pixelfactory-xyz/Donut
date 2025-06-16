@@ -1434,11 +1434,7 @@ void StreamlineIntegration::TagResourcesDLSSRR(
         log::error("No device available.");
         return;
     }
-    if (m_api != nvrhi::GraphicsAPI::D3D12)
-    {
-        log::error("Non-D3D12 not implemented");
-        return;
-    }
+
     if ((specHitDist != nullptr && specMotionVectors != nullptr) || (specHitDist == nullptr && specMotionVectors == nullptr))
     {
         log::error("SpecHitDist and SpecMotionVectors are mutually exclusive - only one or the other can be used");
@@ -1451,24 +1447,26 @@ void StreamlineIntegration::TagResourcesDLSSRR(
     sl::Resource inputColorResource, diffuseAlbedoResource, specAlbedoResource, normalsAndOptionalRoughnessResource, roughnessResource, specHitDistResource, specMotionVectorsResource, outputColorResource;
     void* cmdbuffer = nullptr;
 
-#if DONUT_WITH_DX12
+    GetSLResource(commandList, inputColorResource, inputColor, view);
+    GetSLResource(commandList, diffuseAlbedoResource, diffuseAlbedo, view);
+    GetSLResource(commandList, specAlbedoResource, specAlbedo, view);
+    GetSLResource(commandList, normalsAndOptionalRoughnessResource, normalsAndOptionalRoughness, view);
+    if (roughness != nullptr)
+        GetSLResource(commandList, roughnessResource, roughness, view);
+    if (specHitDist != nullptr)
+        GetSLResource(commandList, specHitDistResource, specHitDist, view);
+    if (specMotionVectors != nullptr)
+        GetSLResource(commandList, specMotionVectorsResource, specMotionVectors, view);
+    GetSLResource(commandList, outputColorResource, outputColor, view);
+
     if (m_device->getGraphicsAPI() == nvrhi::GraphicsAPI::D3D12)
     {
-        GetSLResource(commandList, inputColorResource, inputColor, view);
-        GetSLResource(commandList, diffuseAlbedoResource, diffuseAlbedo, view);
-        GetSLResource(commandList, specAlbedoResource, specAlbedo, view);
-        GetSLResource(commandList, normalsAndOptionalRoughnessResource, normalsAndOptionalRoughness, view);
-        if (roughness != nullptr)
-            GetSLResource(commandList, roughnessResource, roughness, view);
-        if (specHitDist != nullptr)
-            GetSLResource(commandList, specHitDistResource, specHitDist, view);
-        if (specMotionVectors != nullptr)
-            GetSLResource(commandList, specMotionVectorsResource, specMotionVectors, view);
-        GetSLResource(commandList, outputColorResource, outputColor, view);
-
         cmdbuffer = commandList->getNativeObject(nvrhi::ObjectTypes::D3D12_GraphicsCommandList);
     }
-#endif
+    else if (m_device->getGraphicsAPI() == nvrhi::GraphicsAPI::VULKAN)
+    {
+        cmdbuffer = commandList->getNativeObject(nvrhi::ObjectTypes::VK_CommandBuffer);
+    }
 
     // must match sl::DLSSDNormalRoughnessMode; if separate roughness provided then normalsAndOptionalRoughness is just normals, otherwise they're packed together with roughness in .w
     sl::BufferType normalsOrNormalsAndRoughnessBufferType = (roughness==nullptr)?(sl::kBufferTypeNormalRoughness):(sl::kBufferTypeNormals);
