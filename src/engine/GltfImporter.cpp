@@ -1593,14 +1593,13 @@ bool GltfImporter::Load(
 
                     if (target_positions)
                     {
-                        auto [positionSrc, positionStride] = cgltf_buffer_iterator(positions, sizeof(float) * 3);
                         auto [morphTargetPositionSrc, morphTargetPositionStride] = cgltf_buffer_iterator(target_positions, sizeof(float) * 3);
 
                         auto& morphTargetCurrentFrameData = morphTargetData[target_idx];
                         morphTargetCurrentFrameData.resize(morphTargetTotalVertices);
 
                         float3* morphTargetCurrentData = morphTargetCurrentFrameData.data() + totalVertices;
-                        for (size_t v_idx = 0; v_idx < positions->count; v_idx++)
+                        for (size_t v_idx = 0; v_idx < target_positions->count; v_idx++)
                         {
                             *morphTargetCurrentData = *(const float3*)morphTargetPositionSrc;
 
@@ -1608,11 +1607,9 @@ bool GltfImporter::Load(
 
                             morphTargetPositionSrc += morphTargetPositionStride;
                             ++morphTargetCurrentData;
-
-                            positionSrc += positionStride;
                         }
 
-                        morphTargetDataCount += positions->count;
+                        morphTargetDataCount += target_positions->count;
                     }
                 }
             }
