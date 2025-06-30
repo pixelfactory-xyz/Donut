@@ -57,8 +57,8 @@ option(DONUT_WITH_TINYEXR "Include TinyEXR" ON)
 option(DONUT_WITH_UNIT_TESTS "Donut unit-tests (see CMake/CTest documentation)" OFF)
 
 option(DONUT_WITH_STREAMLINE "Enable streamline, separate package required" OFF)
-set(DONUT_STREAMLINE_FETCH_URL "" CACHE STRING "Url to streamline git repo to fetch")
-set(DONUT_STREAMLINE_FETCH_TAG "" CACHE STRING "Tag of streamline git repo")
+set(DONUT_STREAMLINE_FETCH_URL "" CACHE STRING "Url to streamline package to fetch from https://github.com/NVIDIA-RTX/Streamline/releases")
+set(DONUT_STREAMLINE_FETCH_SHA256 "" CACHE STRING "SHA256 hash of streamline package from https://github.com/NVIDIA-RTX/Streamline/releases")
 set(DONUT_STREAMLINE_FETCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/streamline" CACHE STRING "Directory to fetch streamline to, empty uses build directory default")
 set(DONUT_STREAMLINE_SEARCH_PATHS "" CACHE STRING "Search paths for streamline package")
 
@@ -116,20 +116,25 @@ if (DONUT_WITH_STREAMLINE)
         message(SEND_ERROR "Streamline integration requires that CMAKE_RUNTIME_OUTPUT_DIRECTORY is non-empty.")
     endif()
     
-    # XOR logic to make sure both options are set 
-    if ((DONUT_STREAMLINE_FETCH_URL AND NOT DONUT_STREAMLINE_FETCH_TAG) OR 
-        (NOT DONUT_STREAMLINE_FETCH_URL AND DONUT_STREAMLINE_FETCH_TAG))
-        message(SEND_ERROR "Both DONUT_STREAMLINE_FETCH_URL and DONUT_STREAMLINE_FETCH_TAG must be defined together")
+    if (DONUT_STREAMLINE_FETCH_TAG)
+        message(WARNING "DONUT_STREAMLINE_FETCH_TAG is deprecated. Use DONUT_STREAMLINE_FETCH_SHA256 instead. Tag fetching from the public repo no longer has the binaries.")
     endif()
 
-    if (DONUT_STREAMLINE_FETCH_URL AND DONUT_STREAMLINE_FETCH_TAG)
-        message(STATUS "Updating Streamline from " ${DONUT_STREAMLINE_FETCH_URL} ", tag " ${DONUT_STREAMLINE_FETCH_TAG} ", into folder " ${DONUT_STREAMLINE_FETCH_DIR} " - please wait!" )
+    # XOR logic to make sure both options are set 
+    if ((DONUT_STREAMLINE_FETCH_URL AND NOT DONUT_STREAMLINE_FETCH_SHA256) OR 
+        (NOT DONUT_STREAMLINE_FETCH_URL AND DONUT_STREAMLINE_FETCH_SHA256))
+        message(SEND_ERROR "Both DONUT_STREAMLINE_FETCH_URL and DONUT_STREAMLINE_FETCH_SHA256 must be defined together")
+    endif()
+
+    if (DONUT_STREAMLINE_FETCH_URL AND DONUT_STREAMLINE_FETCH_SHA256)
+        message(STATUS "Updating Streamline from " ${DONUT_STREAMLINE_FETCH_URL} ", SHA256 " ${DONUT_STREAMLINE_FETCH_SHA256} ", into folder " ${DONUT_STREAMLINE_FETCH_DIR} " - please wait!" )
         include(FetchContent)
         FetchContent_Declare(
             streamline
-            GIT_REPOSITORY ${DONUT_STREAMLINE_FETCH_URL}
-            GIT_TAG ${DONUT_STREAMLINE_FETCH_TAG}
+            URL ${DONUT_STREAMLINE_FETCH_URL}
+            URL_HASH SHA256=${DONUT_STREAMLINE_FETCH_SHA256}
             SOURCE_DIR ${DONUT_STREAMLINE_FETCH_DIR}
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         FetchContent_MakeAvailable(streamline)
     else ()
