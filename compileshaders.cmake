@@ -326,6 +326,11 @@ function(donut_compile_shaders)
     if(params_FOLDER)
         set_target_properties(${params_TARGET} PROPERTIES FOLDER ${params_FOLDER})
     endif()
+    
+    if(SHADERMAKE_TOOL)
+        add_dependencies(${params_TARGET} ShaderMake)
+    endif()
+
 endfunction()
 
 # Generates a build target that will compile shaders for a given config file for all enabled Donut platforms.
