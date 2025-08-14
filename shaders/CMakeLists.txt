@@ -56,6 +56,7 @@ set(byproducts
 	passes/deferred_lighting_cs
 	passes/depth_ps
 	passes/depth_vs
+	passes/dlss_exposure_cs
 	passes/environment_map_ps
 	passes/exposure_cs
 	passes/forward_ps

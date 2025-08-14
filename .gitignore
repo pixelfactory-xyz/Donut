@@ -22,3 +22,4 @@ media
 **/*_vk.dir/*
 **/Release/*
 thirdparty/streamline
+thirdparty/DLSS
