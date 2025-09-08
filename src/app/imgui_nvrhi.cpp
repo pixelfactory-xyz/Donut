@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
+* Copyright (c) 2014-2025, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
 * copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 /*
 License for Dear ImGui
 
-Copyright (c) 2014-2019 Omar Cornut
+Copyright (c) 2014-2025 Omar Cornut
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -81,8 +81,8 @@ bool ImGui_NVRHI::updateFontTexture()
     ImGuiIO& io = ImGui::GetIO();
 
     // If the font texture exists and is bound to ImGui, we're done.
-    // Note: ImGui_Renderer will reset io.Fonts->TexID when new fonts are added.
-    if (fontTexture && io.Fonts->TexID)
+    // Note: ImGui_Renderer will reset io.Fonts->TexRef when new fonts are added.
+    if (fontTexture && io.Fonts->TexRef.GetTexID())
         return true;
 
     unsigned char *pixels;
@@ -115,7 +115,7 @@ bool ImGui_NVRHI::updateFontTexture()
     m_commandList->close();
     m_device->executeCommandList(m_commandList);
 
-    io.Fonts->TexID = fontTexture;
+    io.Fonts->TexRef = ImTextureRef(fontTexture.Get());
 
     return true;
 }
@@ -363,7 +363,7 @@ bool ImGui_NVRHI::render(nvrhi::IFramebuffer* framebuffer)
             {
                 pCmd->UserCallback(cmdList, pCmd);
             } else {
-                drawState.bindings = { getBindingSet((nvrhi::ITexture*)pCmd->TextureId) };
+                drawState.bindings = { getBindingSet((nvrhi::ITexture*)pCmd->TexRef.GetTexID()) };
                 assert(drawState.bindings[0]);
 
                 drawState.viewport.scissorRects[0] = nvrhi::Rect(int(pCmd->ClipRect.x),
