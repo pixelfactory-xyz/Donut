@@ -540,7 +540,7 @@ bool DeviceManager::AnimateRenderPresent()
 	JoyStickManager::Singleton().EraseDisconnectedJoysticks();
 	JoyStickManager::Singleton().UpdateAllJoysticks(m_vRenderPasses);
 
-    if (m_windowVisible && (m_windowIsInFocus || ShouldRenderUnfocused()))
+    if (m_windowVisible && (m_windowIsInFocus || ShouldRenderUnfocused() || m_RequestedRenderUnfocused))
     {
         if (m_PrevDPIScaleFactorX != m_DPIScaleFactorX || m_PrevDPIScaleFactorY != m_DPIScaleFactorY)
         {
@@ -548,6 +548,8 @@ bool DeviceManager::AnimateRenderPresent()
             m_PrevDPIScaleFactorX = m_DPIScaleFactorX;
             m_PrevDPIScaleFactorY = m_DPIScaleFactorY;
         }
+
+        m_RequestedRenderUnfocused = false;
 
         if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, m_FrameIndex);
         Animate(elapsedTime, true);

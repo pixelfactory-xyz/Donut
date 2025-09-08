@@ -287,6 +287,7 @@ namespace donut::app
         float m_PrevDPIScaleFactorY = 0.f;
         bool m_RequestedVSync = false;
         bool m_InstanceCreated = false;
+        bool m_RequestedRenderUnfocused = false;
 
         double m_AverageFrameTime = 0.0;
         double m_AverageTimeUpdateInterval = 0.5;
@@ -334,6 +335,11 @@ namespace donut::app
         void SetEnableRenderDuringWindowMovement(bool val) {m_EnableRenderDuringWindowMovement = val;} 
         bool IsWindowFocused() const { return m_windowIsInFocus; }
         bool IsWindowVisible() const { return m_windowVisible; }
+
+        // Call this function to make sure that the next frame is rendered even if the window is unfocused.
+        // This is useful for applications that want to continue rendering while performing a long operation,
+        // but otherwise do not want to render when unfocused in order to save power.
+        void RenderNextFrameWhileUnfocused() { m_RequestedRenderUnfocused = true; }
 
         // these are public in order to be called from the GLFW callback functions
         void WindowCloseCallback() { }
