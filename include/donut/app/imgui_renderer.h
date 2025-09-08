@@ -127,7 +127,7 @@ namespace donut::app
         std::shared_ptr<RegisteredFont> m_defaultFont;
 
         bool m_supportExplicitDisplayScaling;
-        bool m_beginFrameCalled = false;
+        bool m_imguiFrameOpened = false;
 
     public:
         ImGui_Renderer(DeviceManager *devManager);
@@ -159,6 +159,7 @@ namespace donut::app
         virtual void Render(nvrhi::IFramebuffer* framebuffer) override;
         virtual void BackBufferResizing() override;
         virtual void DisplayScaleChanged(float scaleX, float scaleY) override;
+        virtual bool ShouldAnimateUnfocused() override { return true; }
 
     protected:
         // creates the UI in ImGui, updates internal UI state

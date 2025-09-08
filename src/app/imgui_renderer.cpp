@@ -304,7 +304,7 @@ bool ImGui_Renderer::MouseButtonUpdate(int button, int action, int mods)
     auto& io = ImGui::GetIO();
 
     ImGui_ImplGlfw_UpdateKeyModifiers(io, GetDeviceManager()->GetWindow());
-
+    
     if (button >= 0 && button < ImGuiMouseButton_COUNT)
         io.AddMouseButtonEvent(button, action == GLFW_PRESS);
 
@@ -313,10 +313,18 @@ bool ImGui_Renderer::MouseButtonUpdate(int button, int action, int mods)
 
 void ImGui_Renderer::Animate(float elapsedTimeSeconds)
 {
-    // multiple Animate may be called before the first Render due to the m_SkipRenderOnFirstFrame extension
-    // ensure each imgui_nvrhi->beginFrame matches with exactly one imgui_nvrhi->Render
-    if (!imgui_nvrhi || m_beginFrameCalled)
+    if (!imgui_nvrhi)
         return;
+
+    // When the app doesn't call Render(), we may have left a frame open. Close it now.
+    // This may happen when the app is unfocused and its ShouldRenderUnfocused() returns false.
+    // We still process ImGui messages while unfocused to make sure that a first click on an ImGui object
+    // in an unfocused window doesn't propagate to the app handlers, such as camera controls.
+    if (m_imguiFrameOpened)
+    {
+        ImGui::EndFrame();
+        m_imguiFrameOpened = false;
+    }
 
     // Make sure that all registered fonts have corresponding ImFont objects at the current DPI scale
     float scaleX, scaleY;
@@ -345,19 +353,20 @@ void ImGui_Renderer::Animate(float elapsedTimeSeconds)
     io.MouseDrawCursor = false;
 
     ImGui::NewFrame();
-    
-    m_beginFrameCalled = true;
+
+    m_imguiFrameOpened = true;
 }
 
 void ImGui_Renderer::Render(nvrhi::IFramebuffer* framebuffer)
 {
-    if (!imgui_nvrhi) return;
+    if (!imgui_nvrhi)
+        return;
 
     buildUI();
 
     ImGui::Render();
     imgui_nvrhi->render(framebuffer);
-    m_beginFrameCalled = false;
+    m_imguiFrameOpened = false;
 }
 
 void ImGui_Renderer::BackBufferResizing()

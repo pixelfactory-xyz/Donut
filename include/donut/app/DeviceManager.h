@@ -306,7 +306,7 @@ namespace donut::app
         void BackBufferResized();
         void DisplayScaleChanged();
 
-        void Animate(double elapsedTime);
+        void Animate(double elapsedTime, bool windowIsFocused);
         void Render();
         void UpdateAverageFrameTime(double elapsedTime);
         bool AnimateRenderPresent();
@@ -332,6 +332,8 @@ namespace donut::app
         virtual void SetVsyncEnabled(bool enabled) { m_RequestedVSync = enabled; /* will be processed later */ }
         virtual void ReportLiveObjects() {}
         void SetEnableRenderDuringWindowMovement(bool val) {m_EnableRenderDuringWindowMovement = val;} 
+        bool IsWindowFocused() const { return m_windowIsInFocus; }
+        bool IsWindowVisible() const { return m_windowVisible; }
 
         // these are public in order to be called from the GLFW callback functions
         void WindowCloseCallback() { }
@@ -410,6 +412,7 @@ namespace donut::app
         virtual ~IRenderPass() = default;
 
         virtual void SetLatewarpOptions() { }
+        virtual bool ShouldAnimateUnfocused() { return false; }
         virtual bool ShouldRenderUnfocused() { return false; }
         virtual void Render(nvrhi::IFramebuffer* framebuffer) { }
         virtual void Animate(float fElapsedTimeSeconds) { }

@@ -451,12 +451,15 @@ void DeviceManager::DisplayScaleChanged()
     }
 }
 
-void DeviceManager::Animate(double elapsedTime)
+void DeviceManager::Animate(double elapsedTime, bool windowIsFocused)
 {
     for(auto it : m_vRenderPasses)
     {
-        it->Animate(float(elapsedTime));
-        it->SetLatewarpOptions();
+        if (windowIsFocused || it->ShouldAnimateUnfocused())
+        {
+            it->Animate(float(elapsedTime));
+            it->SetLatewarpOptions();
+        }
     }
 }
 
@@ -547,7 +550,7 @@ bool DeviceManager::AnimateRenderPresent()
         }
 
         if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, m_FrameIndex);
-        Animate(elapsedTime);
+        Animate(elapsedTime, true);
 #if DONUT_WITH_STREAMLINE
         StreamlineIntegration::Get().SimEnd(*this);
 #endif
@@ -591,6 +594,14 @@ bool DeviceManager::AnimateRenderPresent()
                 }
             }
         }
+    }
+    else if (m_windowVisible)
+    {
+        // Call Animate() even when not rendering, some render passes (e.g. ImGui) need it to process input.
+        // Whether the before/afterAnimate callbacks are necessary in this case is unclear...
+        if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, m_FrameIndex);
+        Animate(elapsedTime, false);
+        if (m_callbacks.afterAnimate) m_callbacks.afterAnimate(*this, m_FrameIndex);
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(0));
