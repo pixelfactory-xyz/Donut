@@ -68,7 +68,6 @@ ToneMappingPass::ToneMappingPass(
     assert(params.histogramBins <= 256);
 
     const IView* sampleView = compositeView.GetChildView(ViewType::PLANAR, 0);
-    nvrhi::IFramebuffer* sampleFramebuffer = m_FramebufferFactory->GetFramebuffer(*sampleView);
 
     {
         std::vector<ShaderMacro> Macros;
@@ -193,7 +192,9 @@ ToneMappingPass::ToneMappingPass(
         pipelineDesc.renderState.depthStencilState.depthTestEnable = false;
         pipelineDesc.renderState.depthStencilState.stencilEnable = false;
 
-        m_RenderPso = device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+        nvrhi::FramebufferInfo framebufferInfo = m_FramebufferFactory->GetFramebufferInfo();
+
+        m_RenderPso = device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
     }
 }
 

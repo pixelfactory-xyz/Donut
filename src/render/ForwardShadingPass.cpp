@@ -237,7 +237,9 @@ nvrhi::BindingSetHandle ForwardShadingPass::CreateShadingBindingSet(nvrhi::IText
     return m_Device->createBindingSet(bindingSetDesc, m_ShadingBindingLayout);
 }
 
-nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* framebuffer)
+
+nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(PipelineKey key,
+    nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
@@ -246,11 +248,12 @@ nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(Pipelin
     pipelineDesc.renderState.rasterState.frontCounterClockwise = key.bits.frontCounterClockwise;
     pipelineDesc.renderState.rasterState.setCullMode(key.bits.cullMode);
     pipelineDesc.renderState.blendState.alphaToCoverageEnable = false;
+    // TODO: Add shadingRateState
     pipelineDesc.bindingLayouts = { m_MaterialBindings->GetLayout(), m_ViewBindingLayout, m_ShadingBindingLayout };
     if (!m_UseInputAssembler)
         pipelineDesc.bindingLayouts.push_back(m_InputBindingLayout);
 
-    bool const framebufferUsesMSAA = framebuffer->getFramebufferInfo().sampleCount > 1;
+    bool const framebufferUsesMSAA = framebufferInfo.sampleCount > 1;
 
     pipelineDesc.renderState.depthStencilState
         .setDepthFunc(key.bits.reverseDepth
@@ -299,7 +302,7 @@ nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(Pipelin
         return nullptr;
     }
 
-    return m_Device->createGraphicsPipeline(pipelineDesc, framebuffer);
+    return m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
 }
 
 std::shared_ptr<MaterialBindingCache> ForwardShadingPass::CreateMaterialBindingCache(CommonRenderPasses& commonPasses)
@@ -492,7 +495,7 @@ bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, con
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
 
         if (!pipeline)
-            pipeline = CreateGraphicsPipeline(key, state.framebuffer);
+            pipeline = CreateGraphicsPipeline(key, state.framebuffer->getFramebufferInfo());
 
         if (!pipeline)
             return false;

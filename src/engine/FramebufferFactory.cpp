@@ -51,3 +51,30 @@ nvrhi::IFramebuffer* FramebufferFactory::GetFramebuffer(const IView& view)
 {
     return GetFramebuffer(view.GetSubresources());
 }
+
+nvrhi::FramebufferInfo FramebufferFactory::GetFramebufferInfo()
+{
+    nvrhi::FramebufferInfo info;
+
+    for (auto rt : RenderTargets)
+    {
+        info.addColorFormat(rt->getDesc().format);
+    }
+
+    if (DepthTarget)
+        info.setDepthFormat(DepthTarget->getDesc().format);
+    
+    // Assume all textures have the same sample count
+    if (!RenderTargets.empty())
+    {
+        info.setSampleCount(RenderTargets[0]->getDesc().sampleCount);
+        info.setSampleQuality(RenderTargets[0]->getDesc().sampleQuality);
+    }
+    else if (DepthTarget)
+    {
+        info.setSampleCount(DepthTarget->getDesc().sampleCount);
+        info.setSampleQuality(DepthTarget->getDesc().sampleQuality);
+    }
+
+    return info;
+}

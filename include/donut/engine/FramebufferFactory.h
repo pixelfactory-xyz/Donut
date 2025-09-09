@@ -46,5 +46,6 @@ namespace donut::engine
 
         virtual nvrhi::IFramebuffer* GetFramebuffer(const nvrhi::TextureSubresourceSet& subresources);
         nvrhi::IFramebuffer* GetFramebuffer(const IView& view);
+        nvrhi::FramebufferInfo GetFramebufferInfo();
     };
 }

@@ -65,7 +65,6 @@ SkyPass::SkyPass(
     m_SkyCB = device->createBuffer(constantBufferDesc);
 
     const IView* sampleView = compositeView.GetChildView(ViewType::PLANAR, 0);
-    nvrhi::IFramebuffer* sampleFramebuffer = m_FramebufferFactory->GetFramebuffer(*sampleView);
 
     {
         nvrhi::BindingLayoutDesc layoutDesc;
@@ -96,7 +95,9 @@ SkyPass::SkyPass(
                 ? nvrhi::ComparisonFunc::GreaterOrEqual
                 : nvrhi::ComparisonFunc::LessOrEqual);
 
-        m_RenderPso = device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+        nvrhi::FramebufferInfo framebufferInfo = m_FramebufferFactory->GetFramebufferInfo();
+
+        m_RenderPso = device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
     }
 }
 

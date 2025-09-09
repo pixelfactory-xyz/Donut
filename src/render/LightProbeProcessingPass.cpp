@@ -173,7 +173,8 @@ void LightProbeProcessingPass::BlitCubemap(nvrhi::ICommandList* commandList, nvr
     
     nvrhi::FramebufferHandle framebuffer = GetCachedFramebuffer(outCubeMap, nvrhi::TextureSubresourceSet(outMipLevel, 1, outBaseArraySlice, 6));
 
-    nvrhi::GraphicsPipelineHandle& pso = m_BlitPsoCache[framebuffer->getFramebufferInfo()];
+    nvrhi::FramebufferInfo const& framebufferInfo = framebuffer->getFramebufferInfo();
+    nvrhi::GraphicsPipelineHandle& pso = m_BlitPsoCache[framebufferInfo];
 
     if (!pso)
     {
@@ -186,7 +187,7 @@ void LightProbeProcessingPass::BlitCubemap(nvrhi::ICommandList* commandList, nvr
         psoDesc.renderState.rasterState.setCullNone();
         psoDesc.renderState.depthStencilState.depthTestEnable = false;
         psoDesc.renderState.depthStencilState.stencilEnable = false;
-        pso = m_Device->createGraphicsPipeline(psoDesc, framebuffer);
+        pso = m_Device->createGraphicsPipeline(psoDesc, framebufferInfo);
     }
 
     LightProbeProcessingConstants constants = {};
@@ -251,7 +252,8 @@ void LightProbeProcessingPass::RenderDiffuseMap(
 
     nvrhi::FramebufferHandle framebuffer = GetCachedFramebuffer(m_IntermediateTexture, nvrhi::TextureSubresourceSet(intermediateMipLevel, 1, 0, 6));
 
-    nvrhi::GraphicsPipelineHandle& pso = m_DiffusePsoCache[framebuffer->getFramebufferInfo()];
+    nvrhi::FramebufferInfo const& framebufferInfo = framebuffer->getFramebufferInfo();
+    nvrhi::GraphicsPipelineHandle& pso = m_DiffusePsoCache[framebufferInfo];
 
     if (!pso)
     {
@@ -264,7 +266,7 @@ void LightProbeProcessingPass::RenderDiffuseMap(
         psoDesc.renderState.rasterState.setCullNone();
         psoDesc.renderState.depthStencilState.depthTestEnable = false;
         psoDesc.renderState.depthStencilState.stencilEnable = false;
-        pso = m_Device->createGraphicsPipeline(psoDesc, framebuffer);
+        pso = m_Device->createGraphicsPipeline(psoDesc, framebufferInfo);
     }
 
     LightProbeProcessingConstants constants = {};
@@ -310,7 +312,8 @@ void LightProbeProcessingPass::RenderSpecularMap(nvrhi::ICommandList* commandLis
 
     nvrhi::FramebufferHandle framebuffer = GetCachedFramebuffer(m_IntermediateTexture, nvrhi::TextureSubresourceSet(intermediateMipLevel, 1, 0, 6));
 
-    nvrhi::GraphicsPipelineHandle& pso = m_SpecularPsoCache[framebuffer->getFramebufferInfo()];
+    nvrhi::FramebufferInfo const& framebufferInfo = framebuffer->getFramebufferInfo();
+    nvrhi::GraphicsPipelineHandle& pso = m_SpecularPsoCache[framebufferInfo];
 
     if (!pso)
     {
@@ -323,7 +326,7 @@ void LightProbeProcessingPass::RenderSpecularMap(nvrhi::ICommandList* commandLis
         psoDesc.renderState.rasterState.setCullNone();
         psoDesc.renderState.depthStencilState.depthTestEnable = false;
         psoDesc.renderState.depthStencilState.stencilEnable = false;
-        pso = m_Device->createGraphicsPipeline(psoDesc, framebuffer);
+        pso = m_Device->createGraphicsPipeline(psoDesc, framebufferInfo);
     }
 
     LightProbeProcessingConstants constants = {};
@@ -359,6 +362,7 @@ void LightProbeProcessingPass::RenderEnvironmentBrdfTexture(nvrhi::ICommandList*
     commandList->beginMarker("Environment BRDF");
 
     nvrhi::FramebufferHandle framebuffer = m_Device->createFramebuffer(nvrhi::FramebufferDesc().addColorAttachment(m_EnvironmentBrdfTexture));
+    nvrhi::FramebufferInfo const& framebufferInfo = framebuffer->getFramebufferInfo();
 
     nvrhi::GraphicsPipelineDesc psoDesc;
     psoDesc.VS = m_CommonPasses->m_FullscreenVS;
@@ -367,7 +371,7 @@ void LightProbeProcessingPass::RenderEnvironmentBrdfTexture(nvrhi::ICommandList*
     psoDesc.renderState.rasterState.setCullNone();
     psoDesc.renderState.depthStencilState.depthTestEnable = false;
     psoDesc.renderState.depthStencilState.stencilEnable = false;
-    nvrhi::GraphicsPipelineHandle pso = m_Device->createGraphicsPipeline(psoDesc, framebuffer);
+    nvrhi::GraphicsPipelineHandle pso = m_Device->createGraphicsPipeline(psoDesc, framebufferInfo);
 
     nvrhi::GraphicsState state;
     state.pipeline = pso;

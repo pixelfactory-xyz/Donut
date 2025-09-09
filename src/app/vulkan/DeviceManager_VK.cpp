@@ -346,16 +346,25 @@ bool DeviceManager_VK::pickPhysicalDevice()
             deviceIsGood = false;
         }
 
-        auto deviceFeatures = dev.getFeatures();
-        if (!deviceFeatures.samplerAnisotropy)
+        vk::PhysicalDeviceFeatures2 deviceFeatures2{};
+        vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
+        deviceFeatures2.pNext = &dynamicRenderingFeatures;
+
+        dev.getFeatures2(&deviceFeatures2);
+        if (!deviceFeatures2.features.samplerAnisotropy)
         {
             // device is a toaster oven
             errorStream << std::endl << "  - does not support samplerAnisotropy";
             deviceIsGood = false;
         }
-        if (!deviceFeatures.textureCompressionBC)
+        if (!deviceFeatures2.features.textureCompressionBC)
         {
             errorStream << std::endl << "  - does not support textureCompressionBC";
+            deviceIsGood = false;
+        }
+        if (!dynamicRenderingFeatures.dynamicRendering)
+        {
+            errorStream << std::endl << "  - does not support dynamicRendering";
             deviceIsGood = false;
         }
 
@@ -670,6 +679,7 @@ bool DeviceManager_VK::createDevice()
         .setPrimitiveFragmentShadingRate(true)
         .setAttachmentFragmentShadingRate(true);
     auto vulkan13features = vk::PhysicalDeviceVulkan13Features()
+        .setDynamicRendering(true)
         .setSynchronization2(synchronization2Supported)
         .setMaintenance4(maintenance4Features.maintenance4);
     auto aftermathFeatures = vk::DeviceDiagnosticsConfigCreateInfoNV()
@@ -680,6 +690,8 @@ bool DeviceManager_VK::createDevice()
         .setClusterAccelerationStructure(true);
     auto mutableDescriptorTypeFeatures = vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT()
         .setMutableDescriptorType(true);
+    auto dynamicRenderingFeatures = vk::PhysicalDeviceDynamicRenderingFeatures()
+        .setDynamicRendering(true);
     
     pNext = nullptr;
     APPEND_EXTENSION(accelStructSupported, accelStructFeatures)
@@ -692,9 +704,9 @@ bool DeviceManager_VK::createDevice()
     APPEND_EXTENSION(clusterAccelerationStructureSupported, clusterAccelerationStructureFeatures)
     APPEND_EXTENSION(mutableDescriptorTypeSupported, mutableDescriptorTypeFeatures)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion >= VK_API_VERSION_1_3, vulkan13features)
-    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features);
+    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features)
+    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3, dynamicRenderingFeatures)
     
-
 #if DONUT_WITH_AFTERMATH
     if (aftermathPhysicalFeatures.diagnosticsConfig && m_DeviceParams.enableAftermath)
         APPEND_EXTENSION(aftermathSupported, aftermathFeatures);

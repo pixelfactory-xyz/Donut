@@ -158,8 +158,9 @@ TemporalAntiAliasingPass::TemporalAntiAliasingPass(
         pipelineDesc.renderState.depthStencilState.depthTestEnable = false;
         pipelineDesc.renderState.depthStencilState.stencilEnable = false;
 
-        nvrhi::IFramebuffer* sampleFramebuffer = m_MotionVectorsFramebufferFactory->GetFramebuffer(*sampleView);
-        m_MotionVectorsPso = device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+        nvrhi::FramebufferInfo framebufferInfo = m_MotionVectorsFramebufferFactory->GetFramebufferInfo();
+
+        m_MotionVectorsPso = device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
     }
 
     {

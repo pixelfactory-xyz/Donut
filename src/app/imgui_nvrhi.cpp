@@ -228,12 +228,12 @@ bool ImGui_NVRHI::reallocateBuffer(nvrhi::BufferHandle& buffer, size_t requiredS
     return true;
 }
 
-nvrhi::IGraphicsPipeline* ImGui_NVRHI::getPSO(nvrhi::IFramebuffer* fb)
+nvrhi::IGraphicsPipeline* ImGui_NVRHI::getPSO(nvrhi::FramebufferInfo const& framebufferInfo)
 {
     if (pso)
         return pso;
 
-    pso = m_device->createGraphicsPipeline(basePSODesc, fb);
+    pso = m_device->createGraphicsPipeline(basePSODesc, framebufferInfo);
     assert(pso);
 
     return pso;
@@ -333,7 +333,7 @@ bool ImGui_NVRHI::render(nvrhi::IFramebuffer* framebuffer)
     drawState.framebuffer = framebuffer;
     assert(drawState.framebuffer);
     
-    drawState.pipeline = getPSO(drawState.framebuffer);
+    drawState.pipeline = getPSO(framebuffer->getFramebufferInfo());
 
     drawState.viewport.viewports.push_back(nvrhi::Viewport(io.DisplaySize.x * io.DisplayFramebufferScale.x,
                                            io.DisplaySize.y * io.DisplayFramebufferScale.y));

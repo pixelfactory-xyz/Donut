@@ -206,7 +206,7 @@ void GBufferFillPass::CreateViewBindings(nvrhi::BindingLayoutHandle& layout, nvr
     set = m_Device->createBindingSet(bindingSetDesc, layout);
 }
 
-nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* sampleFramebuffer)
+nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
@@ -256,7 +256,7 @@ nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKe
         pipelineDesc.PS = m_PixelShader;
     }
 
-    return m_Device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+    return m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
 }
 
 std::shared_ptr<MaterialBindingCache> GBufferFillPass::CreateMaterialBindingCache(CommonRenderPasses& commonPasses)
@@ -329,6 +329,7 @@ bool GBufferFillPass::SetupMaterial(GeometryPassContext& abstractContext, const 
     if (!materialBindingSet)
         return false;
 
+    nvrhi::FramebufferInfo const& framebufferInfo = state.framebuffer->getFramebufferInfo();
     nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key.value];
 
     if (!pipeline)
@@ -336,13 +337,13 @@ bool GBufferFillPass::SetupMaterial(GeometryPassContext& abstractContext, const 
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
 
         if (!pipeline)
-            pipeline = CreateGraphicsPipeline(key, state.framebuffer);
+            pipeline = CreateGraphicsPipeline(key, framebufferInfo);
 
         if (!pipeline)
             return false;
     }
 
-    assert(pipeline->getFramebufferInfo() == state.framebuffer->getFramebufferInfo());
+    assert(pipeline->getFramebufferInfo() == framebufferInfo);
 
     state.pipeline = pipeline;
     state.bindings = { materialBindingSet, m_ViewBindings };

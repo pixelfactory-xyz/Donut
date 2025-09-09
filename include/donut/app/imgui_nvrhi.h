@@ -95,7 +95,7 @@ namespace donut::app
         bool reallocateBuffer(nvrhi::BufferHandle& buffer, size_t requiredSize, size_t reallocateSize, bool isIndexBuffer);
 
 
-        nvrhi::IGraphicsPipeline* getPSO(nvrhi::IFramebuffer* fb);
+        nvrhi::IGraphicsPipeline* getPSO(nvrhi::FramebufferInfo const& framebufferInfo);
         nvrhi::IBindingSet* getBindingSet(nvrhi::ITexture* texture);
         bool updateGeometry(nvrhi::ICommandList* commandList);
     };

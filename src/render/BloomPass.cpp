@@ -138,7 +138,8 @@ BloomPass::BloomPass(
         graphicsPipelineDesc.renderState.rasterState.setCullNone();
         graphicsPipelineDesc.renderState.depthStencilState.depthTestEnable = false;
         graphicsPipelineDesc.renderState.depthStencilState.stencilEnable = false;
-        perViewData.bloomBlurPso = device->createGraphicsPipeline(graphicsPipelineDesc, perViewData.framebufferPass1Blur);
+        perViewData.bloomBlurPso = device->createGraphicsPipeline(graphicsPipelineDesc,
+            perViewData.framebufferPass1Blur->getFramebufferInfo());
         
         nvrhi::BindingSetDesc bindingSetDesc;
         bindingSetDesc.bindings = {

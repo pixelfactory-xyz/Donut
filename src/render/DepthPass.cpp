@@ -171,7 +171,8 @@ std::shared_ptr<MaterialBindingCache> DepthPass::CreateMaterialBindingCache(Comm
         commonPasses.m_BlackTexture);
 }
 
-nvrhi::GraphicsPipelineHandle DepthPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* framebuffer)
+nvrhi::GraphicsPipelineHandle DepthPass::CreateGraphicsPipeline(PipelineKey key,
+    nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
@@ -197,7 +198,7 @@ nvrhi::GraphicsPipelineHandle DepthPass::CreateGraphicsPipeline(PipelineKey key,
     if (!m_UseInputAssembler)
         pipelineDesc.bindingLayouts.push_back(m_InputBindingLayout);
 
-    return m_Device->createGraphicsPipeline(pipelineDesc, framebuffer);
+    return m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
 }
 
 nvrhi::BindingLayoutHandle DepthPass::CreateInputBindingLayout()
@@ -321,6 +322,7 @@ bool DepthPass::SetupMaterial(GeometryPassContext& abstractContext, const engine
     if (!m_UseInputAssembler)
         state.bindings.push_back(context.inputBindingSet);
 
+    nvrhi::FramebufferInfo const& framebufferInfo = state.framebuffer->getFramebufferInfo();
     nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key.value];
 
     if (!pipeline)
@@ -328,13 +330,13 @@ bool DepthPass::SetupMaterial(GeometryPassContext& abstractContext, const engine
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
 
         if (!pipeline)
-            pipeline = CreateGraphicsPipeline(key, state.framebuffer);
+            pipeline = CreateGraphicsPipeline(key, framebufferInfo);
 
         if (!pipeline)
             return false;
     }
 
-    assert(pipeline->getFramebufferInfo() == state.framebuffer->getFramebufferInfo());
+    assert(pipeline->getFramebufferInfo() == framebufferInfo);
 
     state.pipeline = pipeline;
     return true;

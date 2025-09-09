@@ -250,7 +250,7 @@ void CommonRenderPasses::BlitTexture(nvrhi::ICommandList* commandList, const Bli
         psoDesc.renderState.depthStencilState.stencilEnable = false;
         psoDesc.renderState.blendState.targets[0] = params.blendState;
 
-        pso = m_Device->createGraphicsPipeline(psoDesc, params.targetFramebuffer);
+        pso = m_Device->createGraphicsPipeline(psoDesc, fbinfo);
     }
     
     nvrhi::BindingSetDesc bindingSetDesc;
