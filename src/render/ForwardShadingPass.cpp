@@ -238,17 +238,17 @@ nvrhi::BindingSetHandle ForwardShadingPass::CreateShadingBindingSet(nvrhi::IText
 }
 
 
-nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(PipelineKey key,
+nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(ForwardShadingPassPipelineKey const& key,
     nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
     pipelineDesc.VS = m_VertexShader;
     pipelineDesc.GS = m_GeometryShader;
-    pipelineDesc.renderState.rasterState.frontCounterClockwise = key.bits.frontCounterClockwise;
-    pipelineDesc.renderState.rasterState.setCullMode(key.bits.cullMode);
+    pipelineDesc.renderState.rasterState.frontCounterClockwise = key.frontCounterClockwise;
+    pipelineDesc.renderState.rasterState.setCullMode(key.cullMode);
     pipelineDesc.renderState.blendState.alphaToCoverageEnable = false;
-    // TODO: Add shadingRateState
+    pipelineDesc.shadingRateState = key.shadingRateState;
     pipelineDesc.bindingLayouts = { m_MaterialBindings->GetLayout(), m_ViewBindingLayout, m_ShadingBindingLayout };
     if (!m_UseInputAssembler)
         pipelineDesc.bindingLayouts.push_back(m_InputBindingLayout);
@@ -256,11 +256,11 @@ nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(Pipelin
     bool const framebufferUsesMSAA = framebufferInfo.sampleCount > 1;
 
     pipelineDesc.renderState.depthStencilState
-        .setDepthFunc(key.bits.reverseDepth
+        .setDepthFunc(key.reverseDepth
             ? nvrhi::ComparisonFunc::GreaterOrEqual
             : nvrhi::ComparisonFunc::LessOrEqual);
     
-    switch (key.bits.domain)  // NOLINT(clang-diagnostic-switch-enum)
+    switch (key.domain)
     {
     case MaterialDomain::Opaque:
         pipelineDesc.PS = m_PixelShader;
@@ -341,8 +341,9 @@ void ForwardShadingPass::SetupView(
     view->FillPlanarViewConstants(viewConstants.view);
     commandList->writeBuffer(m_ForwardViewCB, &viewConstants, sizeof(viewConstants));
 
-    context.keyTemplate.bits.frontCounterClockwise = view->IsMirrored();
-    context.keyTemplate.bits.reverseDepth = view->IsReverseDepth();
+    context.keyTemplate.frontCounterClockwise = view->IsMirrored();
+    context.keyTemplate.reverseDepth = view->IsReverseDepth();
+    context.keyTemplate.shadingRateState = view->GetVariableRateShadingState();
 }
 
 void ForwardShadingPass::PrepareLights(
@@ -469,7 +470,8 @@ ViewType::Enum ForwardShadingPass::GetSupportedViewTypes() const
     return m_SupportedViewTypes;
 }
 
-bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, const Material* material, nvrhi::RasterCullMode cullMode, nvrhi::GraphicsState& state)
+bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, const Material* material,
+    nvrhi::RasterCullMode cullMode, nvrhi::GraphicsState& state)
 {
     auto& context = static_cast<Context&>(abstractContext);
 
@@ -484,12 +486,12 @@ bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, con
         return false;
     }
 
-    PipelineKey key = context.keyTemplate;
-    key.bits.cullMode = cullMode;
-    key.bits.domain = material->domain;
+    ForwardShadingPassPipelineKey key = context.keyTemplate;
+    key.cullMode = cullMode;
+    key.domain = material->domain;
 
-    nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key.value];
-    
+    nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key];
+
     if (!pipeline)
     {
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
