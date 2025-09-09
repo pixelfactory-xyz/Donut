@@ -380,6 +380,16 @@ void ImGui_Renderer::DisplayScaleChanged(float scaleX, float scaleY)
     if (!m_supportExplicitDisplayScaling)
         return;
 
+    // When the application starts unfocused, we open and close ImGui frames without rendering anything,
+    // and the first call to DisplayScaleChanged happens before Animate and tries to update fonts.
+    // Since the ImGui frame is open at that time, the call crashes because the font atlas is locked.
+    // Prevent that by closing the frame first.
+    if (m_imguiFrameOpened)
+    {
+        ImGui::EndFrame();
+        m_imguiFrameOpened = false;
+    }
+
     auto& io = ImGui::GetIO();
 
     // Clear the ImGui font atlas and invalidate the font texture
