@@ -93,7 +93,6 @@ namespace donut::engine
 
         void LoadSceneGraph(const Json::Value& nodeList, const std::shared_ptr<SceneGraphNode>& parent);
         void LoadAnimations(const Json::Value& nodeList);
-        void LoadHelpers(const Json::Value& nodeList) const;
         
         void UpdateMaterial(const std::shared_ptr<Material>& material);
         void UpdateGeometry(const std::shared_ptr<MeshInfo>& mesh);
