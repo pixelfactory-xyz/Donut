@@ -108,8 +108,10 @@ namespace donut::engine
         { nvrhi::Format::RGBA8_UNORM,          DXGI_FORMAT_R8G8B8A8_UNORM,         32 },
         { nvrhi::Format::RGBA8_SNORM,          DXGI_FORMAT_R8G8B8A8_SNORM,         32 },
         { nvrhi::Format::BGRA8_UNORM,          DXGI_FORMAT_B8G8R8A8_UNORM,         32 },
+        { nvrhi::Format::BGRX8_UNORM,          DXGI_FORMAT_B8G8R8X8_UNORM,         32 },
         { nvrhi::Format::SRGBA8_UNORM,         DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,    32 },
         { nvrhi::Format::SBGRA8_UNORM,         DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,    32 },
+        { nvrhi::Format::SBGRX8_UNORM,         DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,    32 },
         { nvrhi::Format::R10G10B10A2_UNORM,    DXGI_FORMAT_R10G10B10A2_UNORM,      32 },
         { nvrhi::Format::R11G11B10_FLOAT,      DXGI_FORMAT_R11G11B10_FLOAT,        32 },
         { nvrhi::Format::RG16_UINT,            DXGI_FORMAT_R16G16_UINT,            32 },
@@ -644,6 +646,10 @@ namespace donut::engine
 
                 case(nvrhi::Format::BGRA8_UNORM):
                     textureInfo.format = nvrhi::Format::SBGRA8_UNORM;
+                    break;
+
+                case(nvrhi::Format::BGRX8_UNORM):
+                    textureInfo.format = nvrhi::Format::SBGRX8_UNORM;
                     break;
 
                 case(nvrhi::Format::BC1_UNORM):
