@@ -221,7 +221,7 @@ std::shared_ptr<RegisteredFont> ImGui_Renderer::CreateFontFromFile(IFileSystem& 
 	auto font = std::make_shared<RegisteredFont>(fontData, false, fontSize);
     m_fonts.push_back(font);
 
-    return std::move(font);
+    return font;
 }
 
 std::shared_ptr<RegisteredFont> ImGui_Renderer::CreateFontFromMemoryInternal(void const* pData, size_t size,
@@ -238,7 +238,7 @@ std::shared_ptr<RegisteredFont> ImGui_Renderer::CreateFontFromMemoryInternal(voi
     auto font = std::make_shared<RegisteredFont>(blob, compressed, fontSize);
     m_fonts.push_back(font);
 
-    return std::move(font);
+    return font;
 }
 
 std::shared_ptr<RegisteredFont> ImGui_Renderer::CreateFontFromMemory(void const* pData, size_t size, float fontSize)

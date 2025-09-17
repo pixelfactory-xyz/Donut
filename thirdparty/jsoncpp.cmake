@@ -35,6 +35,14 @@ set(__tmp_library_output_dir ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set(__tmp_pdb_output_dir ${CMAKE_PDB_OUTPUT_DIRECTORY})
 set(__tmp_runtime_output_dir ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+# Save the flags before making jsoncpp-specific changes.
+set(__tmp_cxx_flags ${CMAKE_CXX_FLAGS})
+
+if (MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang gives lots of warnings on jsoncpp, silence them.
+    string(APPEND CMAKE_CXX_FLAGS " /W0")
+endif()
+
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_STATIC_LIBS ON)
 set(BUILD_OBJECT_LIBS OFF)
@@ -45,8 +53,9 @@ set(BUILD_SHARED_LIBS ${__tmp_shared_libs})
 set(BUILD_STATIC_LIBS ${__tmp_static_libs})
 set(BUILD_OBJECT_LIBS ${__tmp_object_libs})
 
-# Restore the paths.
+# Restore the paths and flags.
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${__tmp_archive_output_dir} CACHE STRING "" FORCE)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${__tmp_library_output_dir} CACHE STRING "" FORCE)
 set(CMAKE_PDB_OUTPUT_DIRECTORY ${__tmp_pdb_output_dir} CACHE STRING "" FORCE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${__tmp_runtime_output_dir} CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS ${__tmp_cxx_flags})

@@ -164,8 +164,10 @@ nvrhi::BindingSetHandle LightProbeProcessingPass::GetCachedBindingSet(nvrhi::ITe
 
 void LightProbeProcessingPass::BlitCubemap(nvrhi::ICommandList* commandList, nvrhi::ITexture* inCubeMap, uint32_t inBaseArraySlice, uint32_t inMipLevel, nvrhi::ITexture* outCubeMap, uint32_t outBaseArraySlice, uint32_t outMipLevel)
 {
+#ifdef _DEBUG
     const nvrhi::TextureDesc& inputDesc = inCubeMap->getDesc();
     assert(inputDesc.dimension == nvrhi::TextureDimension::TextureCube || inputDesc.dimension == nvrhi::TextureDimension::TextureCubeArray);
+#endif
 
     const nvrhi::TextureDesc& outputDesc = outCubeMap->getDesc();
     assert(outputDesc.dimension == nvrhi::TextureDimension::TextureCube || outputDesc.dimension == nvrhi::TextureDimension::TextureCubeArray);

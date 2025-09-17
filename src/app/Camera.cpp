@@ -253,7 +253,6 @@ void FirstPersonCamera::AnimateSmooth(float deltaT)
     float2 mouseMove = m_MouseMotionAccumulator * (1.f - dampenWeight);
     m_MouseMotionAccumulator *= dampenWeight;
 
-    bool cameraDirty = false;
     affine3 cameraRotation = affine3::identity();
 
     // handle mouse rotation first
@@ -265,18 +264,14 @@ void FirstPersonCamera::AnimateSmooth(float deltaT)
 
         cameraRotation = rotation(float3(0.f, 1.f, 0.f), -yaw);
         cameraRotation = rotation(m_CameraRight, -pitch) * cameraRotation;
-
-        cameraDirty = true;
     }
 
     // handle keyboard roll next
     auto rollResult = AnimateRoll(cameraRotation);
-    cameraDirty |= rollResult.first;
     cameraRotation = rollResult.second;
 
     // handle translation
     auto translateResult = AnimateTranslation(deltaT);
-    cameraDirty |= translateResult.first;
     const float3& cameraMoveVec = translateResult.second;
 
     m_CameraMoveDamp = lerp(cameraMoveVec, m_CameraMovePrev, dampenWeight);
@@ -450,6 +445,8 @@ void ThirdPersonCamera::Animate(float deltaT)
         }
     case MouseState::Panning:
         AnimateTranslation(targetRotation);
+        break;
+    case MouseState::Idle:
         break;
     }
 

@@ -1340,7 +1340,7 @@ void donut::engine::PrintSceneGraph(const std::shared_ptr<SceneGraphNode>& root)
                     ss << "Unknown Type Light";
                 }
             }
-            else if (auto ref = dynamic_cast<SkinnedMeshReference*>(walker->GetLeaf().get()))
+            else if (dynamic_cast<SkinnedMeshReference*>(walker->GetLeaf().get()))
             {
                 ss << "Joint";
             }

@@ -67,8 +67,6 @@ ToneMappingPass::ToneMappingPass(
 {
     assert(params.histogramBins <= 256);
 
-    const IView* sampleView = compositeView.GetChildView(ViewType::PLANAR, 0);
-
     {
         std::vector<ShaderMacro> Macros;
 

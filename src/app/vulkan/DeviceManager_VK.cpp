@@ -288,6 +288,7 @@ void DeviceManager_VK::installDebugCallback()
 
     vk::Result res = m_VulkanInstance.createDebugReportCallbackEXT(&info, nullptr, &m_DebugReportCallback);
     assert(res == vk::Result::eSuccess);
+    (void)res;
 }
 
 bool DeviceManager_VK::pickPhysicalDevice()
@@ -575,7 +576,6 @@ bool DeviceManager_VK::createDevice()
     bool vrsSupported = false;
     bool interlockSupported = false;
     bool barycentricSupported = false;
-    bool storage16BitSupported = false;
     bool synchronization2Supported = false;
     bool maintenance4Supported = false;
     bool aftermathSupported = false;
@@ -601,8 +601,6 @@ bool DeviceManager_VK::createDevice()
             interlockSupported = true;
         else if (ext == VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)
             barycentricSupported = true;
-        else if (ext == VK_KHR_16BIT_STORAGE_EXTENSION_NAME)
-            storage16BitSupported = true;
         else if (ext == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
             synchronization2Supported = true;
         else if (ext == VK_KHR_MAINTENANCE_4_EXTENSION_NAME)
@@ -682,10 +680,12 @@ bool DeviceManager_VK::createDevice()
         .setDynamicRendering(true)
         .setSynchronization2(synchronization2Supported)
         .setMaintenance4(maintenance4Features.maintenance4);
+#if DONUT_WITH_AFTERMATH
     auto aftermathFeatures = vk::DeviceDiagnosticsConfigCreateInfoNV()
         .setFlags(vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableResourceTracking
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderErrorReporting);
+#endif
     auto clusterAccelerationStructureFeatures = vk::PhysicalDeviceClusterAccelerationStructureFeaturesNV()
         .setClusterAccelerationStructure(true);
     auto mutableDescriptorTypeFeatures = vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT()

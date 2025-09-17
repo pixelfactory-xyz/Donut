@@ -300,7 +300,12 @@ bool DeviceManager::CreateWindowDeviceAndSwapChain(const DeviceCreationParameter
         }
     }
 
-    assert(foundFormat);
+    if (!foundFormat)
+    {
+        log::error("Unknown format %s (%d) used for the swap chain",
+            nvrhi::getFormatInfo(params.swapChainFormat).name,
+            int(params.swapChainFormat));
+    }
 
     glfwWindowHint(GLFW_SAMPLES, params.swapChainSampleCount);
     glfwWindowHint(GLFW_REFRESH_RATE, params.refreshRate);
@@ -529,6 +534,9 @@ void DeviceManager::RunMessageLoop()
     // wait for Aftermath dump to complete before exiting application
     if (dumpingCrash && m_DeviceParams.enableAftermath)
         AftermathCrashDump::WaitForCrashDump();
+#else
+    assert(waitSuccess);
+    (void)waitSuccess;
 #endif
 }
 
