@@ -41,8 +41,25 @@ elseif (UNIX AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 	add_library(DLSS STATIC IMPORTED)
 
 	set(dlss_platform "Linux_x86_64")
-	set(dlss_lib "libnvidia-ngx-dlss.so.310.1.0")
 
+	# Search for the DLSS library files, because the version number is included in the filename,
+	# and we don't know which version was pulled - that's controlled by DONUT_DLSS_FETCH_TAG.
+
+	set(dlss_lib_search_path "${dlss_sdk}/lib/${dlss_platform}/rel/libnvidia-ngx-dlss.so.*")
+	file(GLOB dlss_lib_files ${dlss_lib_search_path})
+
+	if (dlss_lib_files)
+		list(LENGTH dlss_lib_files dlss_lib_files_count)
+		if (dlss_lib_files_count EQUAL 1)
+			get_filename_component(dlss_lib "${dlss_lib_files}" NAME)
+			message(STATUS "Found DLSS shared library file: ${dlss_lib}")
+		else()
+			message(FATAL_ERROR "Expected exactly one DLSS library file, found ${dlss_lib_files_count}")
+		endif()
+	else()
+		message(FATAL_ERROR "No DLSS library files found at ${dlss_lib_search_path}")
+	endif()
+	
 	set_target_properties(DLSS PROPERTIES
 		IMPORTED_LOCATION "${dlss_sdk}/lib/${dlss_platform}/libnvsdk_ngx.a"
 	)
