@@ -136,8 +136,7 @@ void DepthPass::CreateViewBindings(nvrhi::BindingLayoutHandle& layout, nvrhi::Bi
 {
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel)
-        .setRegisterSpace(m_IsDX11 ? 0 : DEPTH_SPACE_VIEW)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(DEPTH_SPACE_VIEW)
         .addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(DEPTH_BINDING_VIEW_CONSTANTS))
         .addItem(nvrhi::BindingLayoutItem::Sampler(DEPTH_BINDING_MATERIAL_SAMPLER));
 
@@ -163,8 +162,8 @@ std::shared_ptr<MaterialBindingCache> DepthPass::CreateMaterialBindingCache(Comm
     return std::make_shared<MaterialBindingCache>(
         m_Device,
         nvrhi::ShaderType::Pixel,
-        /* registerSpace = */ m_IsDX11 ? 0 : DEPTH_SPACE_MATERIAL,
-        /* registerSpaceIsDescriptorSet = */ !m_IsDX11,
+        /* registerSpace = */ DEPTH_SPACE_MATERIAL,
+        /* registerSpaceIsDescriptorSet = */ true,
         materialBindings,
         commonPasses.m_AnisotropicWrapSampler,
         commonPasses.m_GrayTexture,
@@ -208,8 +207,7 @@ nvrhi::BindingLayoutHandle DepthPass::CreateInputBindingLayout()
 
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex)
-        .setRegisterSpace(m_IsDX11 ? 0 : DEPTH_SPACE_INPUT)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(DEPTH_SPACE_INPUT)
         .addItem(m_IsDX11
             ? nvrhi::BindingLayoutItem::RawBuffer_SRV(DEPTH_BINDING_INSTANCE_BUFFER)
             : nvrhi::BindingLayoutItem::StructuredBuffer_SRV(DEPTH_BINDING_INSTANCE_BUFFER))
