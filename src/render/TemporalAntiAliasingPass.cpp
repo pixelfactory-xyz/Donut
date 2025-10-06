@@ -64,10 +64,9 @@ TemporalAntiAliasingPass::TemporalAntiAliasingPass(
     , m_R2Jitter(0.0f, 0.0f)
     , m_Jitter(TemporalAntiAliasingJitter::MSAA)
 {
-    const IView* sampleView = compositeView.GetChildView(ViewType::PLANAR, 0);
-
     const nvrhi::TextureDesc& unresolvedColorDesc = params.unresolvedColor->getDesc();
     const nvrhi::TextureDesc& resolvedColorDesc = params.resolvedColor->getDesc();
+#ifdef _DEBUG
     const nvrhi::TextureDesc& feedback1Desc = params.feedback1->getDesc();
     const nvrhi::TextureDesc& feedback2Desc = params.feedback2->getDesc();
 
@@ -77,6 +76,7 @@ TemporalAntiAliasingPass::TemporalAntiAliasingPass(
     assert(feedback1Desc.isUAV);
     assert(feedback2Desc.isUAV);
     assert(resolvedColorDesc.isUAV);
+#endif
 
     bool useStencil = false;
     nvrhi::Format stencilFormat = nvrhi::Format::UNKNOWN;
@@ -158,8 +158,9 @@ TemporalAntiAliasingPass::TemporalAntiAliasingPass(
         pipelineDesc.renderState.depthStencilState.depthTestEnable = false;
         pipelineDesc.renderState.depthStencilState.stencilEnable = false;
 
-        nvrhi::IFramebuffer* sampleFramebuffer = m_MotionVectorsFramebufferFactory->GetFramebuffer(*sampleView);
-        m_MotionVectorsPso = device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+        nvrhi::FramebufferInfo framebufferInfo = m_MotionVectorsFramebufferFactory->GetFramebufferInfo();
+
+        m_MotionVectorsPso = device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
     }
 
     {

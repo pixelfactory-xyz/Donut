@@ -197,7 +197,7 @@ namespace donut::app
             std::optional<float> targetDistance = std::optional<float>());
         
     private:
-        void AnimateOrbit(float deltaT);
+        void AnimateOrbit(float deltaT, dm::float2 mouseMove);
         void AnimateTranslation(const dm::float3x3& viewMatrix);
 
         // View parameters to derive translation amounts
@@ -207,6 +207,14 @@ namespace donut::app
 
         dm::float2 m_MousePos = 0.f;
         dm::float2 m_MousePosPrev = 0.f;
+        
+        enum class MouseState {
+            Idle,
+            Orbiting,
+            Panning
+        };
+        
+        MouseState m_MouseState = MouseState::Idle;
 
         dm::float3 m_TargetPos = 0.f;
         float m_Distance = 30.f;
@@ -232,17 +240,7 @@ namespace donut::app
             { GLFW_KEY_LEFT_ALT, KeyboardControls::HorizontalPan },
         };
 
-        typedef enum
-        {
-            Left,
-            Middle,
-            Right,
-
-            MouseButtonCount
-        } MouseButtons;
-
         std::array<bool, KeyboardControls::KeyboardControlCount> m_KeyboardState = { false };
-        std::array<bool, MouseButtons::MouseButtonCount> m_MouseButtonState = { false };
     };
 
     // The SwitchableCamera class provides a combination of first-person, third-person, and scene graph cameras.

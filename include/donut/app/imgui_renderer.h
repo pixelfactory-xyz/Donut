@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
+* Copyright (c) 2014-2025, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
 * copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 /*
 License for Dear ImGui
 
-Copyright (c) 2014-2019 Omar Cornut
+Copyright (c) 2014-2025 Omar Cornut
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -122,16 +122,12 @@ namespace donut::app
 
         std::unique_ptr<ImGui_NVRHI> imgui_nvrhi;
 
-        // buffer mouse click and keypress events to make sure we don't lose events which last less than a full frame
-        std::array<bool, 3> mouseDown = { false };
-        std::array<bool, GLFW_KEY_LAST + 1> keyDown = { false };
-
         std::vector<std::shared_ptr<RegisteredFont>> m_fonts;
 
         std::shared_ptr<RegisteredFont> m_defaultFont;
 
         bool m_supportExplicitDisplayScaling;
-        bool m_beginFrameCalled = false;
+        bool m_imguiFrameOpened = false;
 
     public:
         ImGui_Renderer(DeviceManager *devManager);
@@ -163,6 +159,7 @@ namespace donut::app
         virtual void Render(nvrhi::IFramebuffer* framebuffer) override;
         virtual void BackBufferResizing() override;
         virtual void DisplayScaleChanged(float scaleX, float scaleY) override;
+        virtual bool ShouldAnimateUnfocused() override { return true; }
 
     protected:
         // creates the UI in ImGui, updates internal UI state

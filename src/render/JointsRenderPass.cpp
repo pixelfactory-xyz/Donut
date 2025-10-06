@@ -187,6 +187,8 @@ namespace donut::render
         UpdateVertices(*sceneGraph);
 
         commandList->writeBuffer(m_VertexBuffer, m_Vertices.data(), m_Vertices.size() * sizeof(Vertex));
+    
+        nvrhi::FramebufferInfo const& framebufferInfo = framebuffer->getFramebufferInfo();
 
         if (!m_Pipeline)
         {
@@ -202,10 +204,10 @@ namespace donut::render
             pipelineDesc.renderState.rasterState.fillMode = nvrhi::RasterFillMode::Wireframe;
             pipelineDesc.renderState.depthStencilState.disableDepthTest();
 
-            m_Pipeline = m_Device->createGraphicsPipeline(pipelineDesc, framebuffer);
+            m_Pipeline = m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
         }
 
-        assert(m_Pipeline->getFramebufferInfo() == framebuffer->getFramebufferInfo());
+        assert(m_Pipeline->getFramebufferInfo() == framebufferInfo);
 
         if (!m_BindingSet)
         {

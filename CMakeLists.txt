@@ -32,12 +32,16 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set_property( GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /MP")
+    string(APPEND CMAKE_CXX_FLAGS " /W3")
+    if (NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+        string(APPEND CMAKE_CXX_FLAGS " /MP")
+    endif()
 endif()
 
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -D_DEBUG")
 
 include(CMakeDependentOption)
+include(FetchContent)
 
 option(DONUT_WITH_NVRHI "Enable NVRHI and related projects" ON)
 
@@ -62,6 +66,10 @@ set(DONUT_STREAMLINE_FETCH_SHA256 "" CACHE STRING "SHA256 hash of Streamline pac
 set(DONUT_STREAMLINE_FETCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/streamline" CACHE STRING "Directory to fetch Streamline to, empty uses build directory default")
 set(DONUT_STREAMLINE_SEARCH_PATHS "" CACHE STRING "Search paths for Streamline package")
 
+option(DONUT_WITH_DLSS "Enable the NGX DLSS integration, separate package required" OFF)
+set(DONUT_DLSS_FETCH_URL "https://github.com/NVIDIA/DLSS.git" CACHE STRING "URL of the DLSS Git repository to fetch from")
+set(DONUT_DLSS_FETCH_TAG "a8ed84e2d1cc1efa7bef63fb9394be6cb06c0d74" CACHE STRING "Git commit hash or tag for DLSS")
+set(DONUT_DLSS_FETCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/DLSS" CACHE STRING "Directory to fetch DLSS to, empty uses build directory default")
 
 if (WIN32)
     option(DONUT_FORCE_DISCRETE_GPU "Declare symbols to make the OS run the app on discrete GPU on laptops" OFF)
@@ -98,6 +106,19 @@ if (DONUT_WITH_NVRHI)
     add_subdirectory(shaders)
 endif()
 
+if (DONUT_WITH_DLSS)
+    message(STATUS "Updating DLSS from " ${DONUT_DLSS_FETCH_URL} ", tag " ${DONUT_DLSS_FETCH_TAG} ", into folder " ${DONUT_DLSS_FETCH_DIR} " - please wait!" )
+    FetchContent_Declare(
+        DLSS
+        GIT_REPOSITORY ${DONUT_DLSS_FETCH_URL}
+        GIT_TAG ${DONUT_DLSS_FETCH_TAG}
+        SOURCE_DIR ${DONUT_DLSS_FETCH_DIR}
+    )
+    FetchContent_MakeAvailable(DLSS)
+
+    include(cmake/DLSS.cmake)
+endif()
+
 include(donut-core.cmake)
 if (DONUT_WITH_NVRHI)
     include(donut-engine.cmake)
@@ -130,7 +151,6 @@ if (DONUT_WITH_STREAMLINE)
 
     if (DONUT_STREAMLINE_FETCH_URL AND DONUT_STREAMLINE_FETCH_SHA256)
         message(STATUS "Updating Streamline from " ${DONUT_STREAMLINE_FETCH_URL} ", SHA256 " ${DONUT_STREAMLINE_FETCH_SHA256} ", into folder " ${DONUT_STREAMLINE_FETCH_DIR} " - please wait!" )
-        include(FetchContent)
         FetchContent_Declare(
             streamline
             URL ${DONUT_STREAMLINE_FETCH_URL}
@@ -150,4 +170,3 @@ if (DONUT_WITH_STREAMLINE)
         endif()
     endif()
 endif()
-

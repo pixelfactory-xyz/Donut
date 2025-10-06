@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014-2021, NVIDIA CORPORATION. All rights reserved.
+* Copyright (c) 2014-2025, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
 * copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 /*
 License for Dear ImGui
 
-Copyright (c) 2014-2019 Omar Cornut
+Copyright (c) 2014-2025 Omar Cornut
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -213,7 +213,7 @@ void ImGui_Console::Render(bool* open)
 
 	bool reclaim_focus = false;
 	auto flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
-	if (ImGui::InputText("", m_InputBuffer.data(), m_InputBuffer.size(), flags, 
+	if (ImGui::InputText("##Command", m_InputBuffer.data(), m_InputBuffer.size(), flags, 
 		[](ImGuiInputTextCallbackData* data)
 		{
 			ImGui_Console* console = (ImGui_Console*)data->UserData;

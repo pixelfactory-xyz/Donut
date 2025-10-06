@@ -9,8 +9,8 @@ Donut has originated from the VRWorks Multi-Projection SDK and has been improved
 ## Requirements
 
 * Windows or Linux (x64 or ARM64)
-* CMake 3.10
-* A C++ 17 compiler (Visual Studio 2019, GCC 8 or Clang 6)
+* CMake 3.31
+* A C++ 17 compiler (Visual Studio 2022, GCC 11 or Clang 14)
 * A shader compiler (FXC for DX11, DXC for DX12, DXC-SPIR-V for Vulkan - the newer the better)
 
 ## Dependencies
@@ -73,7 +73,7 @@ Supported glTF extensions:
 * `KHR_lights_punctual`
 * `MSFT_texture_dds`.
 
-In addition to glTF, Donut supports its own JSON-based scene layout files. Those files can load multiple glTF models and combine them into a larger scene graph, also add lights, cameras, animations, and apply animations to scene nodes imported from the models using their paths.
+In addition to glTF, Donut supports its own [JSON-based scene layout files](doc/SceneFile.md). Those files can load multiple glTF models and combine them into a larger scene graph, also add lights, cameras, animations, and apply animations to scene nodes imported from the models using their paths.
 
 ### Render passes
 

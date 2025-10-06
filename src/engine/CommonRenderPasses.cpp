@@ -189,6 +189,7 @@ CommonRenderPasses::CommonRenderPasses(nvrhi::IDevice* device, const std::shared
     }
 }
 
+#ifdef _DEBUG
 static bool IsSupportedBlitDimension(nvrhi::TextureDimension dimension)
 {
     return dimension == nvrhi::TextureDimension::Texture2D
@@ -196,6 +197,7 @@ static bool IsSupportedBlitDimension(nvrhi::TextureDimension dimension)
         || dimension == nvrhi::TextureDimension::TextureCube
         || dimension == nvrhi::TextureDimension::TextureCubeArray;
 }
+#endif
 
 static bool IsTextureArray(nvrhi::TextureDimension dimension)
 {
@@ -210,14 +212,18 @@ void CommonRenderPasses::BlitTexture(nvrhi::ICommandList* commandList, const Bli
     assert(params.targetFramebuffer);
     assert(params.sourceTexture);
 
+#ifdef _DEBUG
     const nvrhi::FramebufferDesc& targetFramebufferDesc = params.targetFramebuffer->getDesc();
     assert(targetFramebufferDesc.colorAttachments.size() == 1);
     assert(targetFramebufferDesc.colorAttachments[0].valid());
+#endif
 
     const nvrhi::FramebufferInfoEx& fbinfo = params.targetFramebuffer->getFramebufferInfo();
     const nvrhi::TextureDesc& sourceDesc = params.sourceTexture->getDesc();
 
+#ifdef _DEBUG
     assert(IsSupportedBlitDimension(sourceDesc.dimension));
+#endif
     bool isTextureArray = IsTextureArray(sourceDesc.dimension);
 
     nvrhi::Viewport targetViewport = params.targetViewport;
@@ -250,7 +256,7 @@ void CommonRenderPasses::BlitTexture(nvrhi::ICommandList* commandList, const Bli
         psoDesc.renderState.depthStencilState.stencilEnable = false;
         psoDesc.renderState.blendState.targets[0] = params.blendState;
 
-        pso = m_Device->createGraphicsPipeline(psoDesc, params.targetFramebuffer);
+        pso = m_Device->createGraphicsPipeline(psoDesc, fbinfo);
     }
     
     nvrhi::BindingSetDesc bindingSetDesc;

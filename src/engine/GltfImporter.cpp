@@ -804,7 +804,7 @@ bool GltfImporter::Load(
 
     std::unordered_map<const cgltf_image*, std::shared_ptr<LoadedTexture>> imageCache;
 
-    auto load_image = [this, &imageCache, &textureCache, executor, &fileName, objects, &vfsContext, &load_image_data]
+    auto load_image = [&imageCache, &textureCache, executor, &load_image_data]
         (const cgltf_image* image, bool sRGB, bool searchForDDS)
     {
         auto it = imageCache.find(image);
@@ -841,7 +841,7 @@ bool GltfImporter::Load(
 
     std::unordered_map<const cgltf_texture*, std::shared_ptr<LoadedTexture>> gltfTextureCache;
 
-    auto load_texture = [this, objects, c_SearchForDds, &gltfTextureCache, &load_image, &load_image_data]
+    auto load_texture = [objects, c_SearchForDds, &gltfTextureCache, &load_image, &load_image_data]
         (const cgltf_texture* texture, bool sRGB)
     {
         if (!texture)
@@ -1571,7 +1571,6 @@ bool GltfImporter::Load(
                 {
                     const cgltf_morph_target& target = prim.targets[target_idx];
                     const cgltf_accessor* target_positions = nullptr;
-                    const cgltf_accessor* target_normals = nullptr;
 
                     for (size_t attr_idx = 0; attr_idx < target.attributes_count; attr_idx++)
                     {
@@ -1583,10 +1582,7 @@ bool GltfImporter::Load(
                             assert(attr.data->component_type == cgltf_component_type_r_32f);
                             target_positions = attr.data;
                             break;
-                        case cgltf_attribute_type_normal:
-                            assert(attr.data->type == cgltf_type_vec3);
-                            assert(attr.data->component_type == cgltf_component_type_r_32f);
-                            target_normals = attr.data;
+                        default:
                             break;
                         }
                     }
@@ -1630,6 +1626,8 @@ bool GltfImporter::Load(
                 case cgltf_primitive_type_line_strip:
                     geometry->type = MeshGeometryPrimitiveType::LineStrip;
                     break;
+                default:
+                    break;
             }
 
             minfo->objectSpaceBounds |= bounds;
@@ -1643,13 +1641,10 @@ bool GltfImporter::Load(
 
         if (morphTargetData.size() > 0)
         {
-            size_t morphTargetDataSize = 0;
-
             const size_t morphTargetFrameBufferSize = morphTargetData[0].size() * sizeof(float4);
             buffers->morphTargetData.reserve(morphTargetDataCount);
             buffers->morphTargetBufferRange.reserve(morphTargetData.size());
 
-            morphTargetDataCount = 0;
             for (const auto& morphTargetCurrentFrameData : morphTargetData)
             {
                 nvrhi::BufferRange range = {};
@@ -1662,7 +1657,6 @@ bool GltfImporter::Load(
                     buffers->morphTargetData.push_back(float4(morphTargetCurrentData, 0.0f));
                     ++morphTargetDataCount;
                 }
-                morphTargetDataSize += range.byteSize;
             }
         }
     }

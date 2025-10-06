@@ -40,6 +40,32 @@ namespace donut::engine
     struct LightProbe;
 }
 
+namespace donut::render
+{
+    struct ForwardShadingPassPipelineKey
+    {
+        engine::MaterialDomain domain = engine::MaterialDomain::Opaque;
+        nvrhi::RasterCullMode cullMode = nvrhi::RasterCullMode::Back;
+        bool frontCounterClockwise = false;
+        bool reverseDepth = false;
+        nvrhi::VariableRateShadingState shadingRateState{};
+
+        bool operator==(const ForwardShadingPassPipelineKey& other) const
+        {
+            return domain == other.domain &&
+                    cullMode == other.cullMode &&
+                    frontCounterClockwise == other.frontCounterClockwise &&
+                    reverseDepth == other.reverseDepth &&
+                    shadingRateState == other.shadingRateState;
+        }
+
+        bool operator!=(const ForwardShadingPassPipelineKey& other) const
+        {
+            return !(*this == other);
+        }
+    };
+}
+
 namespace std
 {
     template<>
@@ -51,6 +77,20 @@ namespace std
             return h(v.first) ^ (h(v.second) << 8);
         }
     };
+
+    template<> struct hash<donut::render::ForwardShadingPassPipelineKey>
+    {
+        std::size_t operator()(donut::render::ForwardShadingPassPipelineKey const& key) const noexcept
+        {
+            size_t hash = 0;
+            nvrhi::hash_combine(hash, key.domain);
+            nvrhi::hash_combine(hash, key.cullMode);
+            nvrhi::hash_combine(hash, key.frontCounterClockwise);
+            nvrhi::hash_combine(hash, key.reverseDepth);
+            nvrhi::hash_combine(hash, key.shadingRateState);
+            return hash;
+        }
+    };
 }
 
 namespace donut::render
@@ -58,36 +98,18 @@ namespace donut::render
     class ForwardShadingPass : public IGeometryPass
     {
     public:
-        union PipelineKey
-        {
-            struct
-            {
-                engine::MaterialDomain domain : 3;
-                nvrhi::RasterCullMode cullMode : 2;
-                bool frontCounterClockwise : 1;
-                bool reverseDepth : 1;
-            } bits;
-            uint32_t value;
-
-            static constexpr size_t Count = 1 << 7;
-        };
 
         class Context : public GeometryPassContext
         {
         public:
             nvrhi::BindingSetHandle shadingBindingSet;
             nvrhi::BindingSetHandle inputBindingSet;
-            PipelineKey keyTemplate;
+            ForwardShadingPassPipelineKey keyTemplate;
 
             uint32_t positionOffset = 0;
             uint32_t texCoordOffset = 0;
             uint32_t normalOffset = 0;
             uint32_t tangentOffset = 0;
-
-            Context()
-            {
-                keyTemplate.value = 0;
-            }
         };
 
         struct CreateParameters
@@ -119,12 +141,12 @@ namespace donut::render
         engine::ViewType::Enum m_SupportedViewTypes = engine::ViewType::PLANAR;
         nvrhi::BufferHandle m_ForwardViewCB;
         nvrhi::BufferHandle m_ForwardLightCB;
-        nvrhi::GraphicsPipelineHandle m_Pipelines[PipelineKey::Count];
         bool m_TrackLiveness = true;
         bool m_IsDX11 = false;
         bool m_UseInputAssembler = false;
         std::mutex m_Mutex;
 
+        std::unordered_map<ForwardShadingPassPipelineKey, nvrhi::GraphicsPipelineHandle> m_Pipelines;
         std::unordered_map<std::pair<nvrhi::ITexture*, nvrhi::ITexture*>, nvrhi::BindingSetHandle> m_ShadingBindingSets;
         std::unordered_map<const engine::BufferGroup*, nvrhi::BindingSetHandle> m_InputBindingSets;
         
@@ -142,7 +164,7 @@ namespace donut::render
         virtual nvrhi::BindingLayoutHandle CreateInputBindingLayout();
         virtual nvrhi::BindingSetHandle CreateInputBindingSet(const engine::BufferGroup* bufferGroup);
         virtual std::shared_ptr<engine::MaterialBindingCache> CreateMaterialBindingCache(engine::CommonRenderPasses& commonPasses);
-        virtual nvrhi::GraphicsPipelineHandle CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* framebuffer);
+        virtual nvrhi::GraphicsPipelineHandle CreateGraphicsPipeline(ForwardShadingPassPipelineKey const& key, nvrhi::FramebufferInfo const& framebufferInfo);
         nvrhi::BindingSetHandle GetOrCreateInputBindingSet(const engine::BufferGroup* bufferGroup);
 
     public:

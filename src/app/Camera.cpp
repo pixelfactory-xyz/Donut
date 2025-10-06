@@ -253,7 +253,6 @@ void FirstPersonCamera::AnimateSmooth(float deltaT)
     float2 mouseMove = m_MouseMotionAccumulator * (1.f - dampenWeight);
     m_MouseMotionAccumulator *= dampenWeight;
 
-    bool cameraDirty = false;
     affine3 cameraRotation = affine3::identity();
 
     // handle mouse rotation first
@@ -265,18 +264,14 @@ void FirstPersonCamera::AnimateSmooth(float deltaT)
 
         cameraRotation = rotation(float3(0.f, 1.f, 0.f), -yaw);
         cameraRotation = rotation(m_CameraRight, -pitch) * cameraRotation;
-
-        cameraDirty = true;
     }
 
     // handle keyboard roll next
     auto rollResult = AnimateRoll(cameraRotation);
-    cameraDirty |= rollResult.first;
     cameraRotation = rollResult.second;
 
     // handle translation
     auto translateResult = AnimateTranslation(deltaT);
-    cameraDirty |= translateResult.first;
     const float3& cameraMoveVec = translateResult.second;
 
     m_CameraMoveDamp = lerp(cameraMoveVec, m_CameraMovePrev, dampenWeight);
@@ -311,12 +306,28 @@ void ThirdPersonCamera::MouseButtonUpdate(int button, int action, int mods)
 {
     const bool pressed = (action == GLFW_PRESS);
 
-    switch(button)
+    switch(m_MouseState)
     {
-    case GLFW_MOUSE_BUTTON_LEFT: m_MouseButtonState[MouseButtons::Left] = pressed; break;
-    case GLFW_MOUSE_BUTTON_MIDDLE : m_MouseButtonState[MouseButtons::Middle] = pressed; break;
-    case GLFW_MOUSE_BUTTON_RIGHT: m_MouseButtonState[MouseButtons::Right] = pressed; break;
-    default: break;
+    case MouseState::Idle:
+        if (pressed)
+        {
+            if (button == GLFW_MOUSE_BUTTON_LEFT)
+                m_MouseState = MouseState::Orbiting;
+            else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+                m_MouseState = MouseState::Panning;
+            m_MousePosPrev = m_MousePos;
+        }
+        break;
+
+    case MouseState::Orbiting:
+        if (!pressed && button == GLFW_MOUSE_BUTTON_LEFT)
+            m_MouseState = MouseState::Idle;
+        break;
+
+    case MouseState::Panning:
+        if (!pressed && button == GLFW_MOUSE_BUTTON_MIDDLE)
+            m_MouseState = MouseState::Idle;
+        break;
     }
 }
 
@@ -360,16 +371,10 @@ void ThirdPersonCamera::SetView(const engine::PlanarView& view)
     m_ViewportSize = float2(viewport.width(), viewport.height());
 }
 
-void ThirdPersonCamera::AnimateOrbit(float deltaT)
+void ThirdPersonCamera::AnimateOrbit(float deltaT, float2 mouseMove)
 {
-    if (m_MouseButtonState[MouseButtons::Left])
-    {
-        float2 mouseMove = m_MousePos - m_MousePosPrev;
-        float rotateSpeed = m_RotateSpeed;
-
-        m_Yaw -= rotateSpeed * mouseMove.x;
-        m_Pitch += rotateSpeed * mouseMove.y;
-    }
+    m_Yaw -= m_RotateSpeed * mouseMove.x;
+    m_Pitch += m_RotateSpeed * mouseMove.y;
 
     const float ORBIT_SENSITIVITY = 1.5f;
     const float ZOOM_SENSITIVITY = 40.f;
@@ -395,50 +400,57 @@ void ThirdPersonCamera::AnimateTranslation(const dm::float3x3& viewMatrix)
     if (all(m_MousePos == m_MousePosPrev))
         return;
 
-    if (m_MouseButtonState[MouseButtons::Middle])
+    float4 oldClipPos = float4(0.f, 0.f, m_Distance, 1.f) * m_ProjectionMatrix;
+    oldClipPos /= oldClipPos.w;
+    oldClipPos.x = 2.f * (m_MousePosPrev.x) / m_ViewportSize.x - 1.f;
+    oldClipPos.y = 1.f - 2.f * (m_MousePosPrev.y) / m_ViewportSize.y;
+    float4 newClipPos = oldClipPos;
+    newClipPos.x = 2.f * (m_MousePos.x) / m_ViewportSize.x - 1.f;
+    newClipPos.y = 1.f - 2.f * (m_MousePos.y) / m_ViewportSize.y;
+
+    float4 oldViewPos = oldClipPos * m_InverseProjectionMatrix;
+    oldViewPos /= oldViewPos.w;
+    float4 newViewPos = newClipPos * m_InverseProjectionMatrix;
+    newViewPos /= newViewPos.w;
+
+    float2 viewMotion = oldViewPos.xy() - newViewPos.xy();
+
+    m_TargetPos -= viewMotion.x * viewMatrix.row0;
+
+    if (m_KeyboardState[KeyboardControls::HorizontalPan])
     {
-        float4 oldClipPos = float4(0.f, 0.f, m_Distance, 1.f) * m_ProjectionMatrix;
-        oldClipPos /= oldClipPos.w;
-        oldClipPos.x = 2.f * (m_MousePosPrev.x) / m_ViewportSize.x - 1.f;
-        oldClipPos.y = 1.f - 2.f * (m_MousePosPrev.y) / m_ViewportSize.y;
-        float4 newClipPos = oldClipPos;
-        newClipPos.x = 2.f * (m_MousePos.x) / m_ViewportSize.x - 1.f;
-        newClipPos.y = 1.f - 2.f * (m_MousePos.y) / m_ViewportSize.y;
-
-        float4 oldViewPos = oldClipPos * m_InverseProjectionMatrix;
-        oldViewPos /= oldViewPos.w;
-        float4 newViewPos = newClipPos * m_InverseProjectionMatrix;
-        newViewPos /= newViewPos.w;
-
-        float2 viewMotion = oldViewPos.xy() - newViewPos.xy();
-
-        m_TargetPos -= viewMotion.x * viewMatrix.row0;
-
-        if (m_KeyboardState[KeyboardControls::HorizontalPan])
-        {
-            float3 horizontalForward = float3(viewMatrix.row2.x, 0.f, viewMatrix.row2.z);
-            float horizontalLength = length(horizontalForward);
-            if (horizontalLength == 0.f)
-                horizontalForward = float3(viewMatrix.row1.x, 0.f, viewMatrix.row1.z);
-            horizontalForward = normalize(horizontalForward);
-            m_TargetPos += viewMotion.y * horizontalForward * 1.5f;
-        }
-        else
-            m_TargetPos += viewMotion.y * viewMatrix.row1;
+        float3 horizontalForward = float3(viewMatrix.row2.x, 0.f, viewMatrix.row2.z);
+        float horizontalLength = length(horizontalForward);
+        if (horizontalLength == 0.f)
+            horizontalForward = float3(viewMatrix.row1.x, 0.f, viewMatrix.row1.z);
+        horizontalForward = normalize(horizontalForward);
+        m_TargetPos += viewMotion.y * horizontalForward * 1.5f;
     }
+    else
+        m_TargetPos += viewMotion.y * viewMatrix.row1;
 }
 
 void ThirdPersonCamera::Animate(float deltaT)
 {
-    AnimateOrbit(deltaT);
-
     quat orbit = rotationQuat(float3(m_Pitch, m_Yaw, 0));
-
     const auto targetRotation = orbit.toMatrix();
-    AnimateTranslation(targetRotation);
+
+    switch(m_MouseState)
+    {
+    case MouseState::Orbiting:
+        {
+            float2 mouseMove = m_MousePos - m_MousePosPrev;
+            AnimateOrbit(deltaT, mouseMove);
+            break;
+        }
+    case MouseState::Panning:
+        AnimateTranslation(targetRotation);
+        break;
+    case MouseState::Idle:
+        break;
+    }
 
     const float3 vectorToCamera = -m_Distance * targetRotation.row2;
-
     const float3 camPos = m_TargetPos + vectorToCamera;
 
     m_CameraPos = camPos;

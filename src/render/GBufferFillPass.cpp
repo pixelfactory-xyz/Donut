@@ -190,8 +190,7 @@ void GBufferFillPass::CreateViewBindings(nvrhi::BindingLayoutHandle& layout, nvr
 {
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel)
-        .setRegisterSpace(m_IsDX11 ? 0 : GBUFFER_SPACE_VIEW)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(GBUFFER_SPACE_VIEW)
         .addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(GBUFFER_BINDING_VIEW_CONSTANTS))
         .addItem(nvrhi::BindingLayoutItem::Sampler(GBUFFER_BINDING_MATERIAL_SAMPLER));
 
@@ -206,7 +205,7 @@ void GBufferFillPass::CreateViewBindings(nvrhi::BindingLayoutHandle& layout, nvr
     set = m_Device->createBindingSet(bindingSetDesc, layout);
 }
 
-nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* sampleFramebuffer)
+nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
@@ -256,7 +255,7 @@ nvrhi::GraphicsPipelineHandle GBufferFillPass::CreateGraphicsPipeline(PipelineKe
         pipelineDesc.PS = m_PixelShader;
     }
 
-    return m_Device->createGraphicsPipeline(pipelineDesc, sampleFramebuffer);
+    return m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
 }
 
 std::shared_ptr<MaterialBindingCache> GBufferFillPass::CreateMaterialBindingCache(CommonRenderPasses& commonPasses)
@@ -275,8 +274,8 @@ std::shared_ptr<MaterialBindingCache> GBufferFillPass::CreateMaterialBindingCach
     return std::make_shared<MaterialBindingCache>(
         m_Device,
         nvrhi::ShaderType::Pixel,
-        /* registerSpace = */ m_IsDX11 ? 0 : GBUFFER_SPACE_MATERIAL,
-        /* registerSpaceIsDescriptorSet = */ !m_IsDX11,
+        /* registerSpace = */ GBUFFER_SPACE_MATERIAL,
+        /* registerSpaceIsDescriptorSet = */ true,
         materialBindings,
         commonPasses.m_AnisotropicWrapSampler,
         commonPasses.m_GrayTexture,
@@ -329,6 +328,7 @@ bool GBufferFillPass::SetupMaterial(GeometryPassContext& abstractContext, const 
     if (!materialBindingSet)
         return false;
 
+    nvrhi::FramebufferInfo const& framebufferInfo = state.framebuffer->getFramebufferInfo();
     nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key.value];
 
     if (!pipeline)
@@ -336,13 +336,13 @@ bool GBufferFillPass::SetupMaterial(GeometryPassContext& abstractContext, const 
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
 
         if (!pipeline)
-            pipeline = CreateGraphicsPipeline(key, state.framebuffer);
+            pipeline = CreateGraphicsPipeline(key, framebufferInfo);
 
         if (!pipeline)
             return false;
     }
 
-    assert(pipeline->getFramebufferInfo() == state.framebuffer->getFramebufferInfo());
+    assert(pipeline->getFramebufferInfo() == framebufferInfo);
 
     state.pipeline = pipeline;
     state.bindings = { materialBindingSet, m_ViewBindings };
@@ -388,8 +388,7 @@ nvrhi::BindingLayoutHandle GBufferFillPass::CreateInputBindingLayout()
 
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel)
-        .setRegisterSpace(m_IsDX11 ? 0 : GBUFFER_SPACE_INPUT)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(GBUFFER_SPACE_INPUT)
         .addItem(m_IsDX11
             ? nvrhi::BindingLayoutItem::RawBuffer_SRV(GBUFFER_BINDING_INSTANCE_BUFFER)
             : nvrhi::BindingLayoutItem::StructuredBuffer_SRV(GBUFFER_BINDING_INSTANCE_BUFFER))

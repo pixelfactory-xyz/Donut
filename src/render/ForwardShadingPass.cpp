@@ -175,8 +175,7 @@ nvrhi::BindingLayoutHandle ForwardShadingPass::CreateViewBindingLayout()
 {
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex | nvrhi::ShaderType::Pixel)
-        .setRegisterSpace(m_IsDX11 ? 0 : FORWARD_SPACE_VIEW)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(FORWARD_SPACE_VIEW)
         .addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(FORWARD_BINDING_VIEW_CONSTANTS));
 
     return m_Device->createBindingLayout(bindingLayoutDesc);
@@ -196,8 +195,7 @@ nvrhi::BindingLayoutHandle ForwardShadingPass::CreateShadingBindingLayout()
 {
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Pixel)
-        .setRegisterSpace(m_IsDX11 ? 0 : FORWARD_SPACE_SHADING)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(FORWARD_SPACE_SHADING)
         .addItem(nvrhi::BindingLayoutItem::VolatileConstantBuffer(FORWARD_BINDING_LIGHT_CONSTANTS))
         .addItem(nvrhi::BindingLayoutItem::Texture_SRV(FORWARD_BINDING_SHADOW_MAP_TEXTURE))
         .addItem(nvrhi::BindingLayoutItem::Texture_SRV(FORWARD_BINDING_DIFFUSE_LIGHT_PROBE_TEXTURE))
@@ -237,27 +235,30 @@ nvrhi::BindingSetHandle ForwardShadingPass::CreateShadingBindingSet(nvrhi::IText
     return m_Device->createBindingSet(bindingSetDesc, m_ShadingBindingLayout);
 }
 
-nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(PipelineKey key, nvrhi::IFramebuffer* framebuffer)
+
+nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(ForwardShadingPassPipelineKey const& key,
+    nvrhi::FramebufferInfo const& framebufferInfo)
 {
     nvrhi::GraphicsPipelineDesc pipelineDesc;
     pipelineDesc.inputLayout = m_InputLayout;
     pipelineDesc.VS = m_VertexShader;
     pipelineDesc.GS = m_GeometryShader;
-    pipelineDesc.renderState.rasterState.frontCounterClockwise = key.bits.frontCounterClockwise;
-    pipelineDesc.renderState.rasterState.setCullMode(key.bits.cullMode);
+    pipelineDesc.renderState.rasterState.frontCounterClockwise = key.frontCounterClockwise;
+    pipelineDesc.renderState.rasterState.setCullMode(key.cullMode);
     pipelineDesc.renderState.blendState.alphaToCoverageEnable = false;
+    pipelineDesc.shadingRateState = key.shadingRateState;
     pipelineDesc.bindingLayouts = { m_MaterialBindings->GetLayout(), m_ViewBindingLayout, m_ShadingBindingLayout };
     if (!m_UseInputAssembler)
         pipelineDesc.bindingLayouts.push_back(m_InputBindingLayout);
 
-    bool const framebufferUsesMSAA = framebuffer->getFramebufferInfo().sampleCount > 1;
+    bool const framebufferUsesMSAA = framebufferInfo.sampleCount > 1;
 
     pipelineDesc.renderState.depthStencilState
-        .setDepthFunc(key.bits.reverseDepth
+        .setDepthFunc(key.reverseDepth
             ? nvrhi::ComparisonFunc::GreaterOrEqual
             : nvrhi::ComparisonFunc::LessOrEqual);
     
-    switch (key.bits.domain)  // NOLINT(clang-diagnostic-switch-enum)
+    switch (key.domain)
     {
     case MaterialDomain::Opaque:
         pipelineDesc.PS = m_PixelShader;
@@ -299,7 +300,7 @@ nvrhi::GraphicsPipelineHandle ForwardShadingPass::CreateGraphicsPipeline(Pipelin
         return nullptr;
     }
 
-    return m_Device->createGraphicsPipeline(pipelineDesc, framebuffer);
+    return m_Device->createGraphicsPipeline(pipelineDesc, framebufferInfo);
 }
 
 std::shared_ptr<MaterialBindingCache> ForwardShadingPass::CreateMaterialBindingCache(CommonRenderPasses& commonPasses)
@@ -318,8 +319,8 @@ std::shared_ptr<MaterialBindingCache> ForwardShadingPass::CreateMaterialBindingC
     return std::make_shared<MaterialBindingCache>(
         m_Device,
         nvrhi::ShaderType::Pixel,
-        /* registerSpace = */ m_IsDX11 ? 0 : FORWARD_SPACE_MATERIAL,
-        /* registerSpaceIsDescriptorSet = */ !m_IsDX11,
+        /* registerSpace = */ FORWARD_SPACE_MATERIAL,
+        /* registerSpaceIsDescriptorSet = */ true,
         materialBindings,
         commonPasses.m_AnisotropicWrapSampler,
         commonPasses.m_GrayTexture,
@@ -338,8 +339,9 @@ void ForwardShadingPass::SetupView(
     view->FillPlanarViewConstants(viewConstants.view);
     commandList->writeBuffer(m_ForwardViewCB, &viewConstants, sizeof(viewConstants));
 
-    context.keyTemplate.bits.frontCounterClockwise = view->IsMirrored();
-    context.keyTemplate.bits.reverseDepth = view->IsReverseDepth();
+    context.keyTemplate.frontCounterClockwise = view->IsMirrored();
+    context.keyTemplate.reverseDepth = view->IsReverseDepth();
+    context.keyTemplate.shadingRateState = view->GetVariableRateShadingState();
 }
 
 void ForwardShadingPass::PrepareLights(
@@ -466,7 +468,8 @@ ViewType::Enum ForwardShadingPass::GetSupportedViewTypes() const
     return m_SupportedViewTypes;
 }
 
-bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, const Material* material, nvrhi::RasterCullMode cullMode, nvrhi::GraphicsState& state)
+bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, const Material* material,
+    nvrhi::RasterCullMode cullMode, nvrhi::GraphicsState& state)
 {
     auto& context = static_cast<Context&>(abstractContext);
 
@@ -481,18 +484,18 @@ bool ForwardShadingPass::SetupMaterial(GeometryPassContext& abstractContext, con
         return false;
     }
 
-    PipelineKey key = context.keyTemplate;
-    key.bits.cullMode = cullMode;
-    key.bits.domain = material->domain;
+    ForwardShadingPassPipelineKey key = context.keyTemplate;
+    key.cullMode = cullMode;
+    key.domain = material->domain;
 
-    nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key.value];
-    
+    nvrhi::GraphicsPipelineHandle& pipeline = m_Pipelines[key];
+
     if (!pipeline)
     {
         std::lock_guard<std::mutex> lockGuard(m_Mutex);
 
         if (!pipeline)
-            pipeline = CreateGraphicsPipeline(key, state.framebuffer);
+            pipeline = CreateGraphicsPipeline(key, state.framebuffer->getFramebufferInfo());
 
         if (!pipeline)
             return false;
@@ -543,8 +546,7 @@ nvrhi::BindingLayoutHandle ForwardShadingPass::CreateInputBindingLayout()
 
     auto bindingLayoutDesc = nvrhi::BindingLayoutDesc()
         .setVisibility(nvrhi::ShaderType::Vertex)
-        .setRegisterSpace(m_IsDX11 ? 0 : FORWARD_SPACE_INPUT)
-        .setRegisterSpaceIsDescriptorSet(!m_IsDX11)
+        .setRegisterSpaceAndDescriptorSet(FORWARD_SPACE_INPUT)
         .addItem(m_IsDX11
             ? nvrhi::BindingLayoutItem::RawBuffer_SRV(FORWARD_BINDING_INSTANCE_BUFFER)
             : nvrhi::BindingLayoutItem::StructuredBuffer_SRV(FORWARD_BINDING_INSTANCE_BUFFER))

@@ -175,11 +175,13 @@ SsaoPass::SsaoPass(
     nvrhi::ITexture* destinationTexture)
     : SsaoPass(device, shaderFactory, commonPasses, CreateParameters{ dm::int2(gbufferDepth->getDesc().width, gbufferDepth->getDesc().height), false, false, false, 1 })
 {
+#ifdef _DEBUG
     const nvrhi::TextureDesc& depthDesc = gbufferDepth->getDesc();
     const nvrhi::TextureDesc& normalsDesc = gbufferNormals->getDesc();
     assert(depthDesc.sampleCount == normalsDesc.sampleCount);
     assert(depthDesc.sampleCount == 1); // more is currently unsupported
     assert(depthDesc.dimension == nvrhi::TextureDimension::Texture2D); // arrays are currently unsupported
+#endif
 
     CreateBindingSet(gbufferDepth, gbufferNormals, destinationTexture, 0);
 }

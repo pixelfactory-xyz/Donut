@@ -288,6 +288,7 @@ void DeviceManager_VK::installDebugCallback()
 
     vk::Result res = m_VulkanInstance.createDebugReportCallbackEXT(&info, nullptr, &m_DebugReportCallback);
     assert(res == vk::Result::eSuccess);
+    (void)res;
 }
 
 bool DeviceManager_VK::pickPhysicalDevice()
@@ -346,16 +347,25 @@ bool DeviceManager_VK::pickPhysicalDevice()
             deviceIsGood = false;
         }
 
-        auto deviceFeatures = dev.getFeatures();
-        if (!deviceFeatures.samplerAnisotropy)
+        vk::PhysicalDeviceFeatures2 deviceFeatures2{};
+        vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
+        deviceFeatures2.pNext = &dynamicRenderingFeatures;
+
+        dev.getFeatures2(&deviceFeatures2);
+        if (!deviceFeatures2.features.samplerAnisotropy)
         {
             // device is a toaster oven
             errorStream << std::endl << "  - does not support samplerAnisotropy";
             deviceIsGood = false;
         }
-        if (!deviceFeatures.textureCompressionBC)
+        if (!deviceFeatures2.features.textureCompressionBC)
         {
             errorStream << std::endl << "  - does not support textureCompressionBC";
+            deviceIsGood = false;
+        }
+        if (!dynamicRenderingFeatures.dynamicRendering)
+        {
+            errorStream << std::endl << "  - does not support dynamicRendering";
             deviceIsGood = false;
         }
 
@@ -566,7 +576,6 @@ bool DeviceManager_VK::createDevice()
     bool vrsSupported = false;
     bool interlockSupported = false;
     bool barycentricSupported = false;
-    bool storage16BitSupported = false;
     bool synchronization2Supported = false;
     bool maintenance4Supported = false;
     bool aftermathSupported = false;
@@ -592,8 +601,6 @@ bool DeviceManager_VK::createDevice()
             interlockSupported = true;
         else if (ext == VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)
             barycentricSupported = true;
-        else if (ext == VK_KHR_16BIT_STORAGE_EXTENSION_NAME)
-            storage16BitSupported = true;
         else if (ext == VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME)
             synchronization2Supported = true;
         else if (ext == VK_KHR_MAINTENANCE_4_EXTENSION_NAME)
@@ -670,16 +677,21 @@ bool DeviceManager_VK::createDevice()
         .setPrimitiveFragmentShadingRate(true)
         .setAttachmentFragmentShadingRate(true);
     auto vulkan13features = vk::PhysicalDeviceVulkan13Features()
+        .setDynamicRendering(true)
         .setSynchronization2(synchronization2Supported)
         .setMaintenance4(maintenance4Features.maintenance4);
+#if DONUT_WITH_AFTERMATH
     auto aftermathFeatures = vk::DeviceDiagnosticsConfigCreateInfoNV()
         .setFlags(vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableResourceTracking
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderDebugInfo
             | vk::DeviceDiagnosticsConfigFlagBitsNV::eEnableShaderErrorReporting);
+#endif
     auto clusterAccelerationStructureFeatures = vk::PhysicalDeviceClusterAccelerationStructureFeaturesNV()
         .setClusterAccelerationStructure(true);
     auto mutableDescriptorTypeFeatures = vk::PhysicalDeviceMutableDescriptorTypeFeaturesEXT()
         .setMutableDescriptorType(true);
+    auto dynamicRenderingFeatures = vk::PhysicalDeviceDynamicRenderingFeatures()
+        .setDynamicRendering(true);
     
     pNext = nullptr;
     APPEND_EXTENSION(accelStructSupported, accelStructFeatures)
@@ -692,9 +704,9 @@ bool DeviceManager_VK::createDevice()
     APPEND_EXTENSION(clusterAccelerationStructureSupported, clusterAccelerationStructureFeatures)
     APPEND_EXTENSION(mutableDescriptorTypeSupported, mutableDescriptorTypeFeatures)
     APPEND_EXTENSION(physicalDeviceProperties.apiVersion >= VK_API_VERSION_1_3, vulkan13features)
-    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features);
+    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3 && maintenance4Supported, maintenance4Features)
+    APPEND_EXTENSION(physicalDeviceProperties.apiVersion < VK_API_VERSION_1_3, dynamicRenderingFeatures)
     
-
 #if DONUT_WITH_AFTERMATH
     if (aftermathPhysicalFeatures.diagnosticsConfig && m_DeviceParams.enableAftermath)
         APPEND_EXTENSION(aftermathSupported, aftermathFeatures);

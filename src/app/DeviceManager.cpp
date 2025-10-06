@@ -300,7 +300,12 @@ bool DeviceManager::CreateWindowDeviceAndSwapChain(const DeviceCreationParameter
         }
     }
 
-    assert(foundFormat);
+    if (!foundFormat)
+    {
+        log::error("Unknown format %s (%d) used for the swap chain",
+            nvrhi::getFormatInfo(params.swapChainFormat).name,
+            int(params.swapChainFormat));
+    }
 
     glfwWindowHint(GLFW_SAMPLES, params.swapChainSampleCount);
     glfwWindowHint(GLFW_REFRESH_RATE, params.refreshRate);
@@ -451,12 +456,15 @@ void DeviceManager::DisplayScaleChanged()
     }
 }
 
-void DeviceManager::Animate(double elapsedTime)
+void DeviceManager::Animate(double elapsedTime, bool windowIsFocused)
 {
     for(auto it : m_vRenderPasses)
     {
-        it->Animate(float(elapsedTime));
-        it->SetLatewarpOptions();
+        if (windowIsFocused || it->ShouldAnimateUnfocused())
+        {
+            it->Animate(float(elapsedTime));
+            it->SetLatewarpOptions();
+        }
     }
 }
 
@@ -526,6 +534,9 @@ void DeviceManager::RunMessageLoop()
     // wait for Aftermath dump to complete before exiting application
     if (dumpingCrash && m_DeviceParams.enableAftermath)
         AftermathCrashDump::WaitForCrashDump();
+#else
+    assert(waitSuccess);
+    (void)waitSuccess;
 #endif
 }
 
@@ -537,7 +548,7 @@ bool DeviceManager::AnimateRenderPresent()
 	JoyStickManager::Singleton().EraseDisconnectedJoysticks();
 	JoyStickManager::Singleton().UpdateAllJoysticks(m_vRenderPasses);
 
-    if (m_windowVisible && (m_windowIsInFocus || ShouldRenderUnfocused()))
+    if (m_windowVisible && (m_windowIsInFocus || ShouldRenderUnfocused() || m_RequestedRenderUnfocused))
     {
         if (m_PrevDPIScaleFactorX != m_DPIScaleFactorX || m_PrevDPIScaleFactorY != m_DPIScaleFactorY)
         {
@@ -546,8 +557,10 @@ bool DeviceManager::AnimateRenderPresent()
             m_PrevDPIScaleFactorY = m_DPIScaleFactorY;
         }
 
+        m_RequestedRenderUnfocused = false;
+
         if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, m_FrameIndex);
-        Animate(elapsedTime);
+        Animate(elapsedTime, true);
 #if DONUT_WITH_STREAMLINE
         StreamlineIntegration::Get().SimEnd(*this);
 #endif
@@ -591,6 +604,14 @@ bool DeviceManager::AnimateRenderPresent()
                 }
             }
         }
+    }
+    else if (m_windowVisible)
+    {
+        // Call Animate() even when not rendering, some render passes (e.g. ImGui) need it to process input.
+        // Whether the before/afterAnimate callbacks are necessary in this case is unclear...
+        if (m_callbacks.beforeAnimate) m_callbacks.beforeAnimate(*this, m_FrameIndex);
+        Animate(elapsedTime, false);
+        if (m_callbacks.afterAnimate) m_callbacks.afterAnimate(*this, m_FrameIndex);
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(0));

@@ -187,7 +187,6 @@ bool Scene::LoadWithExecutor(const std::filesystem::path& sceneFileName, tf::Exe
             LoadModels(documentRoot["models"], scenePath, executor);
             LoadSceneGraph(documentRoot["graph"], rootNode);
             LoadAnimations(documentRoot["animations"]);
-            LoadHelpers(documentRoot["helpers"]);
         }
         else
         {
@@ -589,27 +588,6 @@ void Scene::LoadAnimations(const Json::Value& nodeList)
         {
             log::warning("Animation '%s' processed with no valid channels, ignoring.",
                 animation->GetName().c_str());
-        }
-    }
-}
-
-void Scene::LoadHelpers(const Json::Value& nodeList) const
-{
-    for (const auto& node : nodeList)
-    {
-        if (node.isArray() && node.size() == 3)
-        {
-            float3 direction;
-            node >> direction;
-
-            affine3 worldToLocal = lookatZ(direction, float3(0.f, 1.f, 0.f));
-            affine3 localToWorld = inverse(worldToLocal);
-
-            quat rotation;
-            decomposeAffine<float>(localToWorld, nullptr, &rotation, nullptr);
-
-            log::info("Converted direction [%f, %f, %f] to quaternion [%f, %f, %f, %f]",
-                direction.x, direction.y, direction.z, rotation.x, rotation.y, rotation.z, rotation.w);
         }
     }
 }
