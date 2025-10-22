@@ -44,6 +44,17 @@ namespace donut::render
     class DLSS
     {
     public:
+        struct InitParameters
+        {
+            uint32_t inputWidth = 0;
+            uint32_t inputHeight = 0;
+            uint32_t outputWidth = 0;
+            uint32_t outputHeight = 0;
+            bool useLinearDepth = false;
+            bool useAutoExposure = false;
+            bool useRayReconstruction = false;
+        };
+
         struct EvaluateParameters
         {
             nvrhi::TextureHandle depthTexture;
@@ -54,6 +65,11 @@ namespace donut::render
             // The exposure buffer returned by ToneMappingPass::GetExposureBuffer(), optional.
             nvrhi::BufferHandle exposureBuffer;
 
+            // DLSS RR (ray reconstruction) specific textures.
+            nvrhi::TextureHandle diffuseAlbedo;
+            nvrhi::TextureHandle specularAlbedo;
+            nvrhi::TextureHandle normalRoughness;
+
             float exposureScale = 1.f;
             float sharpness = 0.f;
             bool resetHistory = false;
@@ -61,12 +77,13 @@ namespace donut::render
 
         DLSS(nvrhi::IDevice* device, donut::engine::ShaderFactory& shaderFactory);
 
-        [[nodiscard]] bool IsSupported() const;
-        [[nodiscard]] bool IsAvailable() const;
+        [[nodiscard]] bool IsDlssSupported() const;
+        [[nodiscard]] bool IsDlssInitialized() const;
 
-        virtual void SetRenderSize(
-            uint32_t inputWidth, uint32_t inputHeight,
-            uint32_t outputWidth, uint32_t outputHeight) = 0;
+        [[nodiscard]] bool IsRayReconstructionSupported() const;
+        [[nodiscard]] bool IsRayReconstructionInitialized() const;
+
+        virtual void Init(const InitParameters& params) = 0;
 
         virtual void Evaluate(
             nvrhi::ICommandList* commandList,
@@ -83,16 +100,16 @@ namespace donut::render
         static const uint32_t DefaultApplicationID = 231313132;
 
     protected:
-        bool m_featureSupported = false;
-        bool m_isAvailable = false;
+        bool m_dlssSupported = false;
+        bool m_dlssInitialized = false;
+
+        bool m_rayReconstructionSupported = false;
+        bool m_rayReconstructionInitialized = false;
 
         NVSDK_NGX_Handle* m_dlssHandle = nullptr;
         NVSDK_NGX_Parameter* m_parameters = nullptr;
 
-        uint32_t m_inputWidth = 0;
-        uint32_t m_inputHeight = 0;
-        uint32_t m_outputWidth = 0;
-        uint32_t m_outputHeight = 0;
+        InitParameters m_initParameters;
 
         nvrhi::DeviceHandle m_device;
         nvrhi::ShaderHandle m_exposureShader;

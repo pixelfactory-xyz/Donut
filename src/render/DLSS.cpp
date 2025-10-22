@@ -75,14 +75,24 @@ DLSS::DLSS(nvrhi::IDevice* device, donut::engine::ShaderFactory& shaderFactory)
     m_featureCommandList = device->createCommandList();
 }
 
-bool DLSS::IsSupported() const
+bool DLSS::IsDlssSupported() const
 {
-    return m_featureSupported;
+    return m_dlssSupported;
 }
 
-bool DLSS::IsAvailable() const
+bool DLSS::IsDlssInitialized() const
 {
-    return m_featureSupported && m_isAvailable;
+    return m_dlssInitialized;
+}
+
+bool DLSS::IsRayReconstructionSupported() const
+{
+    return m_rayReconstructionSupported;
+}
+
+bool DLSS::IsRayReconstructionInitialized() const
+{
+    return m_rayReconstructionInitialized;
 }
 
 void DLSS::ComputeExposure(nvrhi::ICommandList* commandList, nvrhi::IBuffer* toneMapperExposureBuffer, float exposureScale)
