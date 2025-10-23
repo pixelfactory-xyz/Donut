@@ -669,11 +669,13 @@ void StreamlineIntegration::SetConstants(const Constants& consts)
 static sl::DLSSOptions ConvertOptions(const StreamlineIntegration::DLSSOptions& options)
 {
     static_assert(sl::DLSSPreset::eDefault == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::eDefault);
+#if !(SL_VERSION_MAJOR >= 2 && SL_VERSION_MINOR >= 9 && SL_VERSION_PATCH >= 0)
     static_assert(sl::DLSSPreset::ePresetA == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetA);
     static_assert(sl::DLSSPreset::ePresetB == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetB);
     static_assert(sl::DLSSPreset::ePresetC == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetC);
     static_assert(sl::DLSSPreset::ePresetD == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetD);
     static_assert(sl::DLSSPreset::ePresetE == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetE);
+#endif
     static_assert(sl::DLSSPreset::ePresetF == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetF);
     static_assert(sl::DLSSPreset::ePresetG == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetG);
 
@@ -681,6 +683,10 @@ static sl::DLSSOptions ConvertOptions(const StreamlineIntegration::DLSSOptions& 
     static_assert(sl::DLSSPreset::ePresetH == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetH);
     static_assert(sl::DLSSPreset::ePresetI == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetI);
     static_assert(sl::DLSSPreset::ePresetJ == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetJ);
+#endif
+
+#if (SL_VERSION_MAJOR >= 2 && SL_VERSION_MINOR >= 9 && SL_VERSION_PATCH >= 0)
+    static_assert(sl::DLSSPreset::ePresetK == (sl::DLSSPreset)StreamlineIntegration::DLSSPreset::ePresetK);
 #endif
     
     static_assert(sl::DLSSMode::eOff == (sl::DLSSMode)StreamlineIntegration::DLSSMode::eOff);
@@ -753,12 +759,16 @@ void StreamlineIntegration::QueryDLSSOptimalSettings(const DLSSOptions& options,
 static sl::DLSSDOptions ConvertOptions(const StreamlineIntegration::DLSSRROptions& options)
 {
     static_assert(sl::DLSSDPreset::eDefault == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::eDefault);
+#if !(SL_VERSION_MAJOR >= 2 && SL_VERSION_MINOR >= 9 && SL_VERSION_PATCH >= 0)
     static_assert(sl::DLSSDPreset::ePresetA == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetA);
     static_assert(sl::DLSSDPreset::ePresetB == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetB);
     static_assert(sl::DLSSDPreset::ePresetC == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetC);
+#endif
     static_assert(sl::DLSSDPreset::ePresetD == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetD);
     static_assert(sl::DLSSDPreset::ePresetE == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetE);
-    //static_assert(sl::DLSSDPreset::ePresetG == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetF);
+#if (SL_VERSION_MAJOR >= 2 && SL_VERSION_MINOR >= 9 && SL_VERSION_PATCH >= 0)
+    static_assert(sl::DLSSDPreset::ePresetH == (sl::DLSSDPreset)StreamlineIntegration::DLSSRRPreset::ePresetH);
+#endif
     
     static_assert(sl::DLSSMode::eOff == (sl::DLSSMode)StreamlineIntegration::DLSSMode::eOff);
     static_assert(sl::DLSSMode::eMaxPerformance == (sl::DLSSMode)StreamlineIntegration::DLSSMode::eMaxPerformance);

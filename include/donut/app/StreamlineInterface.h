@@ -106,7 +106,8 @@ public:
         ePresetG,
         ePresetH,
         ePresetI,
-        ePresetJ
+        ePresetJ,
+        ePresetK,
     };
     struct DLSSOptions
     {
@@ -310,6 +311,7 @@ public:
         ePresetE,
         ePresetF,
         ePresetG,
+        ePresetH,
     };
     enum class DLSSRRNormalRoughnessMode : uint32_t
     {
