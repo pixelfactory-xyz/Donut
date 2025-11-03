@@ -95,7 +95,7 @@ static cgltf_result cgltf_read_file_vfs(const struct cgltf_memory_options* memor
     return cgltf_result_success;
 }
 
-void cgltf_release_file_vfs(const struct cgltf_memory_options*, const struct cgltf_file_options*, void*)
+void cgltf_release_file_vfs(const struct cgltf_memory_options*, const struct cgltf_file_options*, void*, cgltf_size)
 {
     // do nothing
 }
