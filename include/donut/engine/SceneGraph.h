@@ -110,7 +110,7 @@ namespace donut::engine
 
     class SkinnedMeshInstance : public MeshInstance
     {
-    private:
+    protected:
         friend class SceneGraph;
         std::shared_ptr<MeshInfo> m_PrototypeMesh;
         uint32_t m_LastUpdateFrameIndex = 0;
@@ -596,6 +596,7 @@ namespace donut::engine
         virtual std::shared_ptr<MeshInfo> CreateMesh();
         virtual std::shared_ptr<MeshGeometry> CreateMeshGeometry();
         virtual std::shared_ptr<MeshInstance> CreateMeshInstance(const std::shared_ptr<MeshInfo>& mesh);
+        virtual std::shared_ptr<SkinnedMeshInstance> CreateSkinnedMeshInstance(const std::shared_ptr<SceneTypeFactory> & sceneTypeFactory, const std::shared_ptr<MeshInfo> & prototypeMesh);
     };
 
     void PrintSceneGraph(const std::shared_ptr<SceneGraphNode>& root);

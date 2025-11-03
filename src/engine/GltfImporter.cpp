@@ -1704,14 +1704,14 @@ bool GltfImporter::Load(
         switch(src->type)  // NOLINT(clang-diagnostic-switch-enum)
         {
         case cgltf_light_type_directional: {
-            auto directional = std::make_shared<DirectionalLight>();
+            auto directional = std::dynamic_pointer_cast<DirectionalLight>(m_SceneTypeFactory->CreateLeaf("DirectionalLight"));
             directional->irradiance = src->intensity;
             directional->color = src->color;
             dst = directional;
             break;
         }
         case cgltf_light_type_point: {
-            auto point = std::make_shared<PointLight>();
+            auto point = std::dynamic_pointer_cast<PointLight>(m_SceneTypeFactory->CreateLeaf("PointLight"));
             point->intensity = src->intensity;
             point->color = src->color;
             point->range = src->range;
@@ -1719,7 +1719,7 @@ bool GltfImporter::Load(
             break;
         }
         case cgltf_light_type_spot: {
-            auto spot = std::make_shared<SpotLight>();
+            auto spot = std::dynamic_pointer_cast<SpotLight>(m_SceneTypeFactory->CreateLeaf("SpotLight"));
             spot->intensity = src->intensity;
             spot->color = src->color;
             spot->range = src->range;
@@ -1898,7 +1898,7 @@ bool GltfImporter::Load(
             prototypeMesh = found->second;
             assert( prototypeMesh->isSkinPrototype );
 
-            auto skinnedInstance = std::make_shared<SkinnedMeshInstance>(m_SceneTypeFactory, prototypeMesh);
+            auto skinnedInstance = m_SceneTypeFactory->CreateSkinnedMeshInstance(m_SceneTypeFactory, prototypeMesh);
             skinnedInstance->joints.resize(src->skin->joints_count);
 
             for (size_t joint_idx = 0; joint_idx < src->skin->joints_count; joint_idx++)

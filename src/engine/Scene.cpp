@@ -936,6 +936,11 @@ void Scene::CreateMeshBuffers(nvrhi::ICommandList* commandList)
                     buffers->radiusData.size() * sizeof(buffers->radiusData[0]), bufferDesc.byteSize);
             }
 
+            if (bufferDesc.byteSize == 0)
+            {
+	            continue;
+            }
+
             buffers->vertexBuffer = m_Device->createBuffer(bufferDesc);
             if (m_DescriptorTable)
             {
@@ -1235,8 +1240,8 @@ void Scene::UpdateInstance(const std::shared_ptr<MeshInstance>& instance)
 
     const auto& mesh = instance->GetMesh();
     idata.firstGeometryInstanceIndex = instance->GetGeometryInstanceIndex();
-    idata.firstGeometryIndex = mesh->geometries[0]->globalGeometryIndex;
     idata.numGeometries = uint32_t(mesh->geometries.size());
+    idata.firstGeometryIndex = idata.numGeometries > 0 ? mesh->geometries[0]->globalGeometryIndex : -1;
     idata.flags = 0u;
 
     if (mesh->type == MeshType::CurveDisjointOrthogonalTriangleStrips)

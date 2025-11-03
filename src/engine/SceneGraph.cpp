@@ -1180,6 +1180,11 @@ std::shared_ptr<MeshInstance> SceneTypeFactory::CreateMeshInstance(const std::sh
     return std::make_shared<MeshInstance>(mesh);
 }
 
+std::shared_ptr<SkinnedMeshInstance> SceneTypeFactory::CreateSkinnedMeshInstance(const std::shared_ptr<SceneTypeFactory> & sceneTypeFactory, const std::shared_ptr<MeshInfo> & prototypeMesh)
+{
+    return std::make_shared<SkinnedMeshInstance>(sceneTypeFactory, prototypeMesh);
+}
+
 void donut::engine::PrintSceneGraph(const std::shared_ptr<SceneGraphNode>& root)
 {
     SceneGraphWalker walker(root.get());

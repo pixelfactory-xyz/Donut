@@ -24,6 +24,7 @@
 
 #include <vulkan/vulkan.h>
 #include <nvsdk_ngx_vk.h>
+#include <nvsdk_ngx_defs_dlssd.h>
 #include <nvsdk_ngx_helpers_vk.h>
 
 #include <donut/render/DLSS.h>
@@ -72,52 +73,85 @@ public:
         if (result != NVSDK_NGX_Result_Success)
             return;
 
-        int dlssAvailable = 0;
-        result = m_parameters->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &dlssAvailable);
-        if (result != NVSDK_NGX_Result_Success || !dlssAvailable)
+        // DLSS
         {
-            result = NVSDK_NGX_Result_Fail;
-            NVSDK_NGX_Parameter_GetI(m_parameters, NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult, (int*)&result);
-            log::warning("NVIDIA DLSS is not available on this system, FeatureInitResult = 0x%08x (%ls)",
-                result, GetNGXResultAsString(result));
-            return;
+            int available = 0;
+            result = m_parameters->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &available);
+            m_dlssSupported = available && result == NVSDK_NGX_Result_Success;
+            if (!m_dlssSupported)
+            {
+                result = NVSDK_NGX_Result_Fail;
+                NVSDK_NGX_Parameter_GetI(m_parameters, NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult, (int*)&result);
+                log::warning("NVIDIA DLSS is not available on this system, FeatureInitResult = 0x%08x (%ls)", result, GetNGXResultAsString(result));
+            }
         }
 
-        m_featureSupported = true;
+        // DLSS RR
+        {
+            int available = 0;
+            result = m_parameters->Get(NVSDK_NGX_Parameter_SuperSamplingDenoising_Available, &available);
+            m_rayReconstructionSupported = available && result == NVSDK_NGX_Result_Success;
+            if (!m_rayReconstructionSupported)
+            {
+                result = NVSDK_NGX_Result_Fail;
+                NVSDK_NGX_Parameter_GetI(m_parameters, NVSDK_NGX_Parameter_SuperSamplingDenoising_FeatureInitResult, (int*)&result);
+                log::warning("NVIDIA DLSSRR is not available on this system, FeatureInitResult = 0x%08x (%ls)", result, GetNGXResultAsString(result));
+            }
+        }
     }
 
-    void SetRenderSize(
-        uint32_t inputWidth, uint32_t inputHeight,
-        uint32_t outputWidth, uint32_t outputHeight) override
+    void Init(const InitParameters& params) override
     {
-        if (!m_featureSupported)
+        if (params.useRayReconstruction && !m_rayReconstructionSupported)
+            return;
+        else if (!m_dlssSupported)
             return;
 
-        if (m_inputWidth == inputWidth && m_inputHeight == inputHeight && m_outputWidth == outputWidth && m_outputHeight == outputHeight)
+        if (m_initParameters.inputWidth == params.inputWidth && m_initParameters.inputHeight == params.inputHeight &&
+            m_initParameters.outputWidth == params.outputWidth && m_initParameters.outputHeight == params.outputHeight &&
+            m_initParameters.useLinearDepth == params.useLinearDepth &&
+            m_initParameters.useAutoExposure == params.useAutoExposure &&
+            m_initParameters.useRayReconstruction == params.useRayReconstruction)
             return;
-        
+
         if (m_dlssHandle)
         {
             m_device->waitForIdle();
             NVSDK_NGX_VULKAN_ReleaseFeature(m_dlssHandle);
             m_dlssHandle = nullptr;
+            m_dlssInitialized = false;
+            m_rayReconstructionInitialized = false;
         }
 
         m_featureCommandList->open();
         VkCommandBuffer vkCmdBuf = m_featureCommandList->getNativeObject(nvrhi::ObjectTypes::VK_CommandBuffer);
 
-        NVSDK_NGX_DLSS_Create_Params dlssParams = {};
-        dlssParams.Feature.InWidth = inputWidth;
-        dlssParams.Feature.InHeight = inputHeight;
-        dlssParams.Feature.InTargetWidth = outputWidth;
-        dlssParams.Feature.InTargetHeight = outputHeight;
-        dlssParams.Feature.InPerfQualityValue = NVSDK_NGX_PerfQuality_Value_MaxQuality;
-        dlssParams.InFeatureCreateFlags =
-            NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
-            NVSDK_NGX_DLSS_Feature_Flags_DepthInverted |
-            NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+        m_parameters->Set(NVSDK_NGX_Parameter_CreationNodeMask, 1u);
+        m_parameters->Set(NVSDK_NGX_Parameter_VisibilityNodeMask, 1u);
+        m_parameters->Set(NVSDK_NGX_Parameter_Width, params.inputWidth);
+        m_parameters->Set(NVSDK_NGX_Parameter_Height, params.inputHeight);
+        m_parameters->Set(NVSDK_NGX_Parameter_OutWidth, params.outputWidth);
+        m_parameters->Set(NVSDK_NGX_Parameter_OutHeight, params.outputHeight);
 
-        NVSDK_NGX_Result result = NGX_VULKAN_CREATE_DLSS_EXT(vkCmdBuf, 1, 1, &m_dlssHandle, m_parameters, &dlssParams);
+        int inFeatureCreateFlags =
+            NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
+            NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+        inFeatureCreateFlags |= params.useLinearDepth ? 0 : NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+        m_parameters->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, inFeatureCreateFlags);
+        m_parameters->Set(NVSDK_NGX_Parameter_Use_HW_Depth, params.useLinearDepth ? NVSDK_NGX_DLSS_Depth_Type_Linear : NVSDK_NGX_DLSS_Depth_Type_HW);
+
+        NVSDK_NGX_Result result;
+        if (params.useRayReconstruction)
+        {
+            m_parameters->Set(NVSDK_NGX_Parameter_DLSS_Denoise_Mode, NVSDK_NGX_DLSS_Denoise_Mode_DLUnified);
+            m_parameters->Set(NVSDK_NGX_Parameter_DLSS_Roughness_Mode, NVSDK_NGX_DLSS_Roughness_Mode_Packed);
+
+            result = NVSDK_NGX_VULKAN_CreateFeature(vkCmdBuf, NVSDK_NGX_Feature_RayReconstruction, m_parameters, &m_dlssHandle);
+        }
+        else
+        {
+            result = NVSDK_NGX_VULKAN_CreateFeature(vkCmdBuf, NVSDK_NGX_Feature_SuperSampling, m_parameters, &m_dlssHandle);
+        }
 
         m_featureCommandList->close();
         m_device->executeCommandList(m_featureCommandList);
@@ -128,12 +162,12 @@ public:
             return;
         }
 
-        m_isAvailable = true;
+        if (params.useRayReconstruction)
+            m_rayReconstructionInitialized = true;
+        else
+            m_dlssInitialized = true;
 
-        m_inputWidth = inputWidth;
-        m_inputHeight = inputHeight;
-        m_outputWidth = outputWidth;
-        m_outputHeight = outputHeight;
+        m_initParameters = params;
     }
 
     static void FillTextureResource(NVSDK_NGX_Resource_VK& resource, nvrhi::ITexture* texture)
@@ -154,17 +188,18 @@ public:
         viewInfo.SubresourceRange.baseMipLevel = 0;
         viewInfo.SubresourceRange.levelCount = 1;
     }
-    
+
     void Evaluate(
         nvrhi::ICommandList* commandList,
         const EvaluateParameters& params,
         const donut::engine::PlanarView& view) override
     {
-        if (!m_isAvailable)
+        if (!m_dlssInitialized && !m_rayReconstructionInitialized)
             return;
 
-        bool const useExposureBuffer = params.exposureBuffer != nullptr && params.exposureScale != 0.f;
-        
+        commandList->beginMarker(m_rayReconstructionInitialized ? "DLSS_RR" : "DLSS");
+
+        bool const useExposureBuffer = params.exposureBuffer != nullptr && params.exposureScale != 0.f && !m_rayReconstructionInitialized;
         if (useExposureBuffer)
         {
             ComputeExposure(commandList, params.exposureBuffer, params.exposureScale);
@@ -177,10 +212,19 @@ public:
         NVSDK_NGX_Resource_VK depthResource;
         NVSDK_NGX_Resource_VK motionVectorResource;
         NVSDK_NGX_Resource_VK exposureResource;
+        NVSDK_NGX_Resource_VK diffuseAlbedoResource;
+        NVSDK_NGX_Resource_VK specularAlbedoResource;
+        NVSDK_NGX_Resource_VK normalRougnessResource;
         FillTextureResource(inColorResource, params.inputColorTexture);
         FillTextureResource(outColorResource, params.outputColorTexture);
         FillTextureResource(depthResource, params.depthTexture);
         FillTextureResource(motionVectorResource, params.motionVectorsTexture);
+        if (m_rayReconstructionInitialized)
+        {
+            FillTextureResource(diffuseAlbedoResource, params.diffuseAlbedo);
+            FillTextureResource(specularAlbedoResource, params.specularAlbedo);
+            FillTextureResource(normalRougnessResource, params.normalRoughness);
+        }
         if (useExposureBuffer)
         {
             FillTextureResource(exposureResource, m_exposureTexture);
@@ -190,28 +234,44 @@ public:
         commandList->setTextureState(params.outputColorTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::UnorderedAccess);
         commandList->setTextureState(params.depthTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
         commandList->setTextureState(params.motionVectorsTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
+        if (m_rayReconstructionInitialized)
+        {
+            commandList->setTextureState(params.diffuseAlbedo, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
+            commandList->setTextureState(params.specularAlbedo, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
+            commandList->setTextureState(params.normalRoughness, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
+        }
         if (useExposureBuffer)
         {
             commandList->setTextureState(m_exposureTexture, nvrhi::AllSubresources, nvrhi::ResourceStates::ShaderResource);
         }
         commandList->commitBarriers();
-        
-        NVSDK_NGX_VK_DLSS_Eval_Params evalParams = {};
-        evalParams.Feature.pInColor = &inColorResource;
-        evalParams.Feature.pInOutput = &outColorResource;
-        evalParams.Feature.InSharpness = params.sharpness;
-        evalParams.pInDepth = &depthResource;
-        evalParams.pInMotionVectors = &motionVectorResource;
-        evalParams.pInExposureTexture = useExposureBuffer ? &exposureResource : nullptr;
-        evalParams.InReset = params.resetHistory;
-        evalParams.InJitterOffsetX = view.GetPixelOffset().x;
-        evalParams.InJitterOffsetY = view.GetPixelOffset().y;
-        evalParams.InRenderSubrectDimensions.Width = view.GetViewExtent().width();
-        evalParams.InRenderSubrectDimensions.Height = view.GetViewExtent().height();
 
-        NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSS_EXT(vkCmdBuf, m_dlssHandle, m_parameters, &evalParams);
+        m_parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_X, view.GetPixelOffset().x);
+        m_parameters->Set(NVSDK_NGX_Parameter_Jitter_Offset_Y, view.GetPixelOffset().y);
+        m_parameters->Set(NVSDK_NGX_Parameter_Reset, params.resetHistory);
+        m_parameters->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, view.GetViewExtent().width());
+        m_parameters->Set(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Height, view.GetViewExtent().height());
+
+        // Common buffers
+        m_parameters->Set(NVSDK_NGX_Parameter_Color, &inColorResource);
+        m_parameters->Set(NVSDK_NGX_Parameter_Output, &outColorResource);
+        m_parameters->Set(NVSDK_NGX_Parameter_Depth, &depthResource);
+        m_parameters->Set(NVSDK_NGX_Parameter_MotionVectors, &motionVectorResource);
+        m_parameters->Set(NVSDK_NGX_Parameter_ExposureTexture, useExposureBuffer ? &exposureResource : nullptr);
+
+        if (m_rayReconstructionInitialized)
+        {
+            m_parameters->Set(NVSDK_NGX_Parameter_DiffuseAlbedo, &diffuseAlbedoResource);
+            m_parameters->Set(NVSDK_NGX_Parameter_SpecularAlbedo, &specularAlbedoResource);
+            m_parameters->Set(NVSDK_NGX_Parameter_GBuffer_Normals, &normalRougnessResource);
+            m_parameters->Set(NVSDK_NGX_Parameter_GBuffer_Roughness, &normalRougnessResource);
+        }
+
+        NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_EvaluateFeature_C(vkCmdBuf, m_dlssHandle, m_parameters, NULL);
 
         commandList->clearState();
+
+        commandList->endMarker();
 
         if (result != NVSDK_NGX_Result_Success)
         {
