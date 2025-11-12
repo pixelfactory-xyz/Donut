@@ -48,6 +48,8 @@ namespace donut::engine
             : name(_name)
             , definition(_definition)
         { }
+
+        bool operator == (const ShaderMacro& other) const { return name == other.name && definition == other.definition; }
     };
 
     struct StaticShader
